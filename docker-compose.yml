@@ -1,0 +1,35 @@
+---
+services:
+  # Koji < 1.30 does not work with Postgres 14
+  db:
+    image: docker.io/library/postgres:13.8
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/koji-postgres-password
+      POSTGRES_USER: koji
+      POSTGRES_DB: koji
+    secrets:
+      - koji-postgres-password
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - db
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "koji"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db:
+    driver: local
+
+networks:
+  db:
+    internal: true
+
+secrets:
+  koji-postgres-password:
+    external: true
