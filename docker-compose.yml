@@ -22,14 +22,48 @@ services:
       timeout: 5s
       retries: 10
 
+  koji-hub:
+    build:
+      context: ./koji-hub
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    secrets:
+      - koji-postgres-password
+      - koji-hub-certificate-key
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/koji-postgres-password
+      KOJI_HUB_CERTIFICATE_KEY: /run/secrets/koji-hub-certificate-key
+    volumes:
+      - kojidata:/mnt/koji
+    networks:
+      - db
+      - koji-backend
+    expose:
+      - "443"
+    ports:
+      - "8080:443"
+    healthcheck:
+      test: ["CMD", "koji", "-p", "localhost", "moshimoshi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   db:
+    driver: local
+  kojidata:
     driver: local
 
 networks:
   db:
     internal: true
+  koji-backend:
+    internal: true
 
 secrets:
   koji-postgres-password:
+    external: true
+  koji-hub-certificate-key:
     external: true
