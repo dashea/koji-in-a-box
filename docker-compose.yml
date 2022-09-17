@@ -50,6 +50,22 @@ services:
       timeout: 5s
       retries: 10
 
+  koji-sweep-db:
+    build:
+      context: ./koji-sweep-db
+    # the sweep job only needs the database to be up and not the koji-hub,
+    # but set koji-hub as the dependency to ensure that the database has been initialized
+    depends_on:
+      koji-hub:
+        condition: service_healthy
+    restart: unless-stopped
+    secrets:
+      - koji-postgres-password
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/koji-postgres-password
+    networks:
+      - db
+
 volumes:
   db:
     driver: local

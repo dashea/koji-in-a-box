@@ -53,9 +53,5 @@ INSERT INTO user_perms (user_id, perm_id, creator_id) (SELECT id, 1, id FROM use
 COMMIT;
 EOF
 
-# Run the cleanup task as a one-off now that the database is up and initialized
-# Don't bother with the systemd timer since there's no systemd inside a container
-/usr/sbin/koji-sweep-db
-
 # Start httpd
 exec /usr/sbin/httpd -DFOREGROUND
