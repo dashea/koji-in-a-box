@@ -66,6 +66,20 @@ services:
     networks:
       - db
 
+  koji-admin:
+    build:
+      context: ./koji-admin
+    depends_on:
+      koji-hub:
+        condition: service_healthy
+    restart: unless-stopped
+    secrets:
+      - koji-admin-certificate-key
+    environment:
+      KOJI_ADMIN_CERTIFICATE_KEY: /run/secrets/koji-admin-certificate-key
+    networks:
+      - koji-backend
+
 volumes:
   db:
     driver: local
@@ -82,4 +96,6 @@ secrets:
   koji-postgres-password:
     external: true
   koji-hub-certificate-key:
+    external: true
+  koji-admin-certificate-key:
     external: true

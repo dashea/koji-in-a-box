@@ -1,4 +1,6 @@
 /koji_ca_cert.crt
 /koji_ca_cert.key
+/koji-admin/koji-admin.crt
+/koji-admin/koji_ca_cert.crt
 /koji-hub/koji-hub.crt
 /koji-hub/koji_ca_cert.crt

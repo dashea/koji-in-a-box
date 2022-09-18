@@ -45,10 +45,16 @@ fi
 
 # Copy the public certificate to each build context directory that needs it
 cp koji_ca_cert.crt ./koji-hub/
+cp koji_ca_cert.crt ./koji-admin/
 
 # Create the certificate and private key for koji-hub
 # Save the public certificate as koji-hub.crt
 # Save the private key as a podman secret named koji-hub-certificate-key
 if [ ! -f koji-hub/koji-hub.crt ]; then
     create_certificate koji-hub
+fi
+
+# Create the certificate for the admin user
+if [ ! -f koji-admin/koji-admin.crt ]; then
+    create_certificate koji-admin
 fi
