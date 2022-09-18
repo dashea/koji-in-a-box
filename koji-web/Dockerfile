@@ -7,7 +7,7 @@ RUN dnf install --repo=fedora -y koji-web-0:1.28.0-1.fc36 \
 
 # Set up config files:
 # /etc/httpd/conf.d/kojiweb.conf: Use SSL for login
-# /etc/httpd/conf.d/ssl.conf: Set the certificate files (private key will be set up in the entrypoint)
+# /etc/httpd/conf.d/ssl.conf: Set the certificate files (private key will be set up in the entrypoint), set up a reverse proxy to koji-hub
 # /etc/httpd/conf/httpd.conf: Set a server name
 # /etc/kojiweb/web.conf: Set the URLs of the koji-hub and certificate paths (combined cert and private key will be created in entrypoint, Secret will be set in entrypoint)
 RUN { \
@@ -24,6 +24,11 @@ RUN { \
         echo "SSLCertificateFile /etc/pki/koji/koji-web.crt"; \
         echo "SSLCertificateChainFile /etc/pki/koji/koji_ca_cert.crt"; \
         echo "SSLCACertificateFile /etc/pki/koji/koji_ca_cert.crt"; \
+        echo "SSLProxyEngine on"; \
+        echo "SSLProxyCACertificateFile /etc/pki/koji/koji_ca_cert.crt"; \
+        echo "SSLProxyMachineCertificateFile /etc/pki/koji/koji-web.pem"; \
+        echo "ProxyPass /kojihub https://koji-hub/kojihub"; \
+        echo "ProxyPassReverse /kojihub https://koji-hub/kojihub"; \
     } >> /etc/httpd/conf.d/ssl.conf && \
     echo "ServerName koji-web" >> /etc/httpd/conf/httpd.conf && \
     sed -i -e 's|^KojiHubURL = .*|KojiHubURL = https://koji-hub/kojihub|' \

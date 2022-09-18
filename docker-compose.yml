@@ -42,8 +42,6 @@ services:
       - koji-backend
     expose:
       - "443"
-    ports:
-      - "8080:443"
     healthcheck:
       test: ["CMD", "koji", "-p", "localhost", "moshimoshi"]
       interval: 5s
@@ -97,9 +95,9 @@ services:
     networks:
       - koji-backend
     ports:
-      - "8081:443"
+      - "8080:443"
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cacert", "/etc/pki/koji/koji_ca_cert.crt", "--insecure", "https://localhost/koji"]
+      test: ["CMD", "curl", "-f", "--cacert", "/etc/pki/koji/koji_ca_cert.crt", "https://localhost/koji"]
       interval: 5s
       timeout: 5s
       retries: 10
