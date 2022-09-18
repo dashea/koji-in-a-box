@@ -49,6 +49,19 @@ In firefox, this is under Settings -> Certificates -> View Certificates... -> Yo
 Import the `koji-user.p12` file.
 The password is blank.
 
+### Set up the git repositories
+
+The git repositories are served out of a bind mount from the host's filesystem.
+This way interacting with git on the host just be done through local files.
+
+Create a directory where the git repos will live.
+The path can be any readable path.
+
+e.g., `mkdir ~/koji-git`.
+
+The path is passed to podman-compose via the `KOJI_GIT_PATH` environment variable.
+e.g., `export KOJI_GIT_PATH=~/koji-git`.
+
 ### Fire it up
 
 Build the necessary container images:

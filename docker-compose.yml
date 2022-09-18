@@ -102,6 +102,18 @@ services:
       timeout: 5s
       retries: 10
 
+  git:
+    build:
+      context: ./git
+    restart: unless-stopped
+    networks:
+      - git
+    volumes:
+      - type: bind
+        source: ${KOJI_GIT_PATH:-/srv/koji-git}
+        target: /srv/git
+        read_only: true
+
 volumes:
   db:
     driver: local
@@ -112,6 +124,8 @@ networks:
   db:
     internal: true
   koji-backend:
+    internal: true
+  git:
     internal: true
 
 secrets:
