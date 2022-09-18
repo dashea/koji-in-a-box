@@ -46,6 +46,7 @@ fi
 # Copy the public certificate to each build context directory that needs it
 cp koji_ca_cert.crt ./koji-hub/
 cp koji_ca_cert.crt ./koji-admin/
+cp koji_ca_cert.crt ./koji-web/
 
 # Create the certificate and private key for koji-hub
 # Save the public certificate as koji-hub.crt
@@ -76,6 +77,40 @@ if [ ! -f ./koji-user.pem ]; then
 
     rm koji-user.csr koji-user.crt koji-user.key
 fi
+
+# Create the koji-web certificate
+if [ ! -f koji-web/koji-web.crt ]; then
+    cat - > koji-web.cfg << EOF
+[req]
+req_extensions = req_ext
+
+[req_ext]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = koji-web
+DNS.2 = localhost
+DNS.3 = localhost.localdomain
+EOF
+
+    if podman secret inspect "koji-web-certificate-key" >/dev/null 2>&1 ; then
+        podman secret rm "koji-web-certificate-key"
+    fi
+
+    openssl req -new -noenc \
+        -subj "/C=${CA_COUNTRY}/ST=${CA_STATEORPROVINCE}/L=${CA_LOCALITY}/O=${CA_ORGANIZATION}/OU=koji-web/CN=koji-web" \
+        -config koji-web.cfg \
+        -newkey rsa:2048 -passout 'pass:' \
+        -out koji-web.csr -keyout - | podman secret create "koji-web-certificate-key" -
+    openssl x509 -req -CA koji_ca_cert.crt -CAkey koji_ca_cert.key -passin 'pass:' \
+        -copy_extensions copy \
+        -in koji-web.csr -out koji-web/koji-web.crt
+    rm koji-web.cfg koji-web.csr
+fi
+
+# Create a secret for the `Secret` setting of koji-web
+podman secret inspect koji-web-secret >/dev/null 2>&1 || \
+    openssl rand -base64 32 | podman secret create koji-web-secret -
 
 echo ""
 echo "Install certificate files on the host system:"

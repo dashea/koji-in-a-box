@@ -81,6 +81,29 @@ services:
     networks:
       - koji-backend
 
+  koji-web:
+    build:
+      context: ./koji-web
+    depends_on:
+      koji-hub:
+        condition: service_healthy
+    restart: unless-stopped
+    secrets:
+      - koji-web-secret
+      - koji-web-certificate-key
+    environment:
+      KOJI_WEB_SECRET_FILE: /run/secrets/koji-web-secret
+      KOJI_WEB_CERTIFICATE_KEY: /run/secrets/koji-web-certificate-key
+    networks:
+      - koji-backend
+    ports:
+      - "8081:443"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--cacert", "/etc/pki/koji/koji_ca_cert.crt", "--insecure", "https://localhost/koji"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   db:
     driver: local
@@ -99,4 +122,8 @@ secrets:
   koji-hub-certificate-key:
     external: true
   koji-admin-certificate-key:
+    external: true
+  koji-web-certificate-key:
+    external: true
+  koji-web-secret:
     external: true
