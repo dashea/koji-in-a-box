@@ -27,6 +27,47 @@ serverca = ~/.koji/local-koji-serverca.crt
 EOF
 ```
 
+### Initialize the secrets
+
+Run `./generate_secrets.sh` to create the necessary certificate files and add secrets to podman.
+
+Copy the koji-user certificates to your home directory:
+
+```sh
+cp koji_ca_cert.crt ~/.koji/local-koji-serverca.crt
+cp koji-user.pem ~/.koji/local-koji-user.pem
+```
+
+Add the CA certificate to your web browser as a certificate authority.
+In firefox, this is under Settings -> Certificates -> View Certificates... -> Authorities -> Import...
+Import the `koji_ca_cert.crt` file.
+Select the `Trust this CA to identify websites` option.
+If you need to remove the CA, it will show up under the "Organization" value, "Koji in a Box".
+
+Add the user certificate to your web browser.
+In firefox, this is under Settings -> Certificates -> View Certificates... -> Your Certificates -> Import...
+Import the `koji-user.p12` file.
+The password is blank.
+
+### Fire it up
+
+Build the necessary container images:
+
+```sh
+podman-compose build
+```
+
+And then start everything up
+
+```sh
+podman-compose up
+```
+
+### Use it
+
+The koji configuration above creates a profile named `local-koji`.
+To access the koji services using the koji CLI, run `koji -p local-koji ...`.
+
 ## An overview of the guts
 
 ### Authentication
