@@ -3,6 +3,30 @@
 This project defines a multi-architecture koji build system that can be run on a single machine as a set of non-root containers.
 This is a pretty weird thing to want to do.
 
+## How to use
+
+### Host setup
+
+Install the necessary packages on your host system:
+
+```sh
+dnf install koji podman podman-compose openssl
+```
+
+Create a koji profile pointing to your local servers:
+
+```sh
+mkdir ~/.koji
+cat - <<EOF
+[local-koji]
+server = https://localhost:8080/kojihub
+weburl = https://localhost:8080/koji
+authtype = ssl
+cert = ~/.koji/local-koji-user.pem
+serverca = ~/.koji/local-koji-serverca.crt
+EOF
+```
+
 ## An overview of the guts
 
 ### Authentication

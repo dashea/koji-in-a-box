@@ -58,3 +58,30 @@ fi
 if [ ! -f koji-admin/koji-admin.crt ]; then
     create_certificate koji-admin
 fi
+
+# Create a non-admin user certificate
+# Do this one manually since the key will be saved on the filesystem instead of stored as a podman secret
+if [ ! -f ./koji-user.pem ]; then
+    openssl req -new -noenc \
+        -subj "/C=${CA_COUNTRY}/ST=${CA_STATEORPROVINCE}/L=${CA_LOCALITY}/O=${CA_ORGANIZATION}/OU=koji-user/CN=koji-user" \
+        -newkey rsa:2048 -passout 'pass:' \
+        -out koji-user.csr -keyout koji-user.key
+    openssl x509 -req -CA koji_ca_cert.crt -CAkey koji_ca_cert.key -passin 'pass:' \
+        -in koji-user.csr -out koji-user.crt
+    cat koji-user.crt koji-user.key > koji-user.pem
+
+    # Create a pkcs12 certificate for use with a web browser
+    openssl pkcs12 -export -inkey koji-user.key -in koji-user.crt -passout 'pass:' \
+        -CAfile koji_ca_cert.crt -out koji-user.p12
+
+    rm koji-user.csr koji-user.crt koji-user.key
+fi
+
+echo ""
+echo "Install certificate files on the host system:"
+echo ""
+echo "cp koji_ca_cert.crt ~/.koji/local-koji-serverca.crt"
+echo "cp koji-user.pem ~/.koji/local-koji-user.pem"
+echo ""
+echo "Add koji_ca_cert.crt to your web browser as a certificate authority"
+echo "Add kojiadmin.p12 to your web browser as a user certificate"

@@ -4,3 +4,5 @@
 /koji-admin/koji_ca_cert.crt
 /koji-hub/koji-hub.crt
 /koji-hub/koji_ca_cert.crt
+/koji-user.p12
+/koji-user.pem

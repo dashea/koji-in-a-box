@@ -77,6 +77,7 @@ services:
       - koji-admin-certificate-key
     environment:
       KOJI_ADMIN_CERTIFICATE_KEY: /run/secrets/koji-admin-certificate-key
+      KOJI_ADMIN_ADD_USERS: "koji-user"
     networks:
       - koji-backend
 
