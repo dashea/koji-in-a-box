@@ -48,6 +48,15 @@ for user in $KOJI_ADMIN_ADD_USERS ; do
     user_exists "$user" || koji add-user "$user"
 done
 
+# Add the builders
+for builder_arch in $KOJI_ADMIN_BUILDERS ; do
+    eval "archlist=\$KOJI_ADMIN_BUILDER_${builder_arch}"
+    hostname="koji-builder-${builder_arch}"
+    # Unlike `koji userinfo`, `koji hostinfo` will return 1 when the host does not exist
+    # shellcheck disable=SC2154,SC2086
+    koji hostinfo "$hostname" >/dev/null 2>&1 || koji add-host "$hostname" $archlist
+done
+
 # Sleep forever. This will keep the container running so it can be attched to
 # Running tail instead of a shell builtin like `sleep` allows the process to be killed
 # so the container can be shutdown cleanly.

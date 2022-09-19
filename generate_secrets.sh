@@ -10,6 +10,7 @@ CA_ORGANIZATION="Koji in a Box"
 create_certificate()
 {
     basename="$1"
+    directory="${2:-$1}"
     secret_name="${basename}-certificate-key"
 
     # Remove the secret if it already exists
@@ -22,7 +23,7 @@ create_certificate()
         -newkey rsa:2048 -passout 'pass:' \
         -out "${basename}.csr" -keyout - | podman secret create "$secret_name" -
     openssl x509 -req -CA koji_ca_cert.crt -CAkey koji_ca_cert.key -passin 'pass:' \
-        -in "${basename}.csr" -out "${basename}/${basename}.crt"
+        -in "${basename}.csr" -out "${directory}/${basename}.crt"
     rm "${basename}.csr"
 }
 
@@ -47,6 +48,7 @@ fi
 cp koji_ca_cert.crt ./koji-hub/
 cp koji_ca_cert.crt ./koji-admin/
 cp koji_ca_cert.crt ./koji-web/
+cp koji_ca_cert.crt ./koji-builder/
 
 # Create the certificate and private key for koji-hub
 # Save the public certificate as koji-hub.crt
@@ -111,6 +113,16 @@ fi
 # Create a secret for the `Secret` setting of koji-web
 podman secret inspect koji-web-secret >/dev/null 2>&1 || \
     openssl rand -base64 32 | podman secret create koji-web-secret -
+
+# Create the koji-builder certificates
+if [ ! -f koji-builder/koji-builder-aarch64.crt ]; then
+    create_certificate koji-builder-aarch64 koji-builder
+fi
+
+# Create a non-admin user certificate for use by the builders' readiness probe.
+if [ ! -f koji-builder/koji-builder-probe.crt ]; then
+    create_certificate koji-builder-probe koji-builder
+fi
 
 echo ""
 echo "Install certificate files on the host system:"

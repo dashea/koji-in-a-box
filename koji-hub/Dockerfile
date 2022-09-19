@@ -1,4 +1,5 @@
-FROM docker.io/library/fedora:36
+# hadolint ignore=DL3029
+FROM --platform=$BUILDPLATFORM docker.io/library/fedora:36
 EXPOSE 443
 
 # Fedora docker images are built with tsflags=nodocs in dnf.conf.

@@ -75,7 +75,9 @@ services:
       - koji-admin-certificate-key
     environment:
       KOJI_ADMIN_CERTIFICATE_KEY: /run/secrets/koji-admin-certificate-key
-      KOJI_ADMIN_ADD_USERS: "koji-user"
+      KOJI_ADMIN_ADD_USERS: "koji-user koji-builder-probe"
+      KOJI_ADMIN_BUILDERS: "aarch64"
+      KOJI_ADMIN_BUILDER_aarch64: "aarch64"
     networks:
       - koji-backend
 
@@ -114,6 +116,30 @@ services:
         target: /srv/git
         read_only: true
 
+  koji-builder-aarch64:
+    build:
+      context: ./koji-builder
+      args:
+        arch: aarch64
+        dockerarch: linux/arm64
+    restart: unless-stopped
+    networks:
+      - git
+      - koji-backend
+    volumes:
+      - kojidata:/mnt/koji:ro
+    depends_on:
+      koji-admin:
+        condition: service_started
+      git:
+        condition: service_started
+    secrets:
+      - koji-builder-aarch64-certificate-key
+      - koji-builder-probe-certificate-key
+    environment:
+      KOJI_BUILDER_CERTIFICATE_KEY: /run/secrets/koji-builder-aarch64-certificate-key
+      KOJI_BUILDER_PROBE_CERTIFICATE_KEY: /run/secrets/koji-builder-probe-certificate-key
+
 volumes:
   db:
     driver: local
@@ -138,4 +164,8 @@ secrets:
   koji-web-certificate-key:
     external: true
   koji-web-secret:
+    external: true
+  koji-builder-probe-certificate-key:
+    external: true
+  koji-builder-aarch64-certificate-key:
     external: true

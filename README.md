@@ -10,7 +10,8 @@ This is a pretty weird thing to want to do.
 Install the necessary packages on your host system:
 
 ```sh
-dnf install koji podman podman-compose openssl
+sudo dnf install koji podman podman-compose openssl qemu-user-static
+sudo systemctl restart systemd-binfmt
 ```
 
 Create a koji profile pointing to your local servers:

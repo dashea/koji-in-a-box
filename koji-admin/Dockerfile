@@ -1,4 +1,5 @@
-FROM docker.io/library/fedora:36
+# hadolint ignore=DL3029
+FROM --platform=$BUILDPLATFORM docker.io/library/fedora:36
 
 RUN dnf install --repo=fedora -y koji-0:1.28.0-1.fc36 && \
     dnf clean all
