@@ -76,7 +76,7 @@ services:
     environment:
       KOJI_ADMIN_CERTIFICATE_KEY: /run/secrets/koji-admin-certificate-key
       KOJI_ADMIN_ADD_USERS: "koji-user koji-builder-probe"
-      KOJI_ADMIN_BUILDERS: "aarch64 x86_64"
+      KOJI_ADMIN_BUILDERS: "x86_64 aarch64"
       KOJI_ADMIN_BUILDER_aarch64: "aarch64"
       KOJI_ADMIN_BUILDER_x86_64: "x86_64"
     networks:

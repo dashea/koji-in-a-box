@@ -49,12 +49,19 @@ for user in $KOJI_ADMIN_ADD_USERS ; do
 done
 
 # Add the builders
+# Add the first builder to the createrepo channel
+firstbuilder=1
 for builder_arch in $KOJI_ADMIN_BUILDERS ; do
     eval "archlist=\$KOJI_ADMIN_BUILDER_${builder_arch}"
     hostname="koji-builder-${builder_arch}"
     # Unlike `koji userinfo`, `koji hostinfo` will return 1 when the host does not exist
     # shellcheck disable=SC2154,SC2086
     koji hostinfo "$hostname" >/dev/null 2>&1 || koji add-host "$hostname" $archlist
+
+    if [ "$firstbuilder" -eq 1 ]; then
+        firstbuilder=0
+        env LANG=C koji hostinfo "$hostname" | grep -q '^Channels:.*createrepo' || koji add-host-to-channel "$hostname" createrepo
+    fi
 done
 
 # Sleep forever. This will keep the container running so it can be attched to
