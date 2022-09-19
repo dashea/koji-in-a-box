@@ -166,6 +166,24 @@ services:
       KOJI_BUILDER_CERTIFICATE_KEY: /run/secrets/koji-builder-x86_64-certificate-key
       KOJI_BUILDER_PROBE_CERTIFICATE_KEY: /run/secrets/koji-builder-probe-certificate-key
 
+  kojira:
+    build:
+      context: ./kojira
+    restart: unless-stopped
+    networks:
+      - koji-backend
+    volumes:
+      - kojidata:/mnt/koji
+    depends_on:
+      koji-admin:
+        condition: service_started
+      koji-hub:
+        condition: service_healthy
+    secrets:
+      - kojira-certificate-key
+    environment:
+      KOJIRA_CERTIFICATE_KEY: /run/secrets/kojira-certificate-key
+
 volumes:
   db:
     driver: local
@@ -196,4 +214,6 @@ secrets:
   koji-builder-aarch64-certificate-key:
     external: true
   koji-builder-x86_64-certificate-key:
+    external: true
+  kojira-certificate-key:
     external: true

@@ -48,6 +48,15 @@ for user in $KOJI_ADMIN_ADD_USERS ; do
     user_exists "$user" || koji add-user "$user"
 done
 
+# Handle the kojira user separately, since it needs to be granted repo permissions
+if ! user_exists kojira ; then
+    koji add-user kojira
+fi
+
+if ! env LANG=C koji userinfo kojira | grep -q -w repo ; then
+    koji grant-permission repo kojira
+fi
+
 # Add the builders
 # Add the first builder to the createrepo channel
 firstbuilder=1

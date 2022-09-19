@@ -49,6 +49,7 @@ cp koji_ca_cert.crt ./koji-hub/
 cp koji_ca_cert.crt ./koji-admin/
 cp koji_ca_cert.crt ./koji-web/
 cp koji_ca_cert.crt ./koji-builder/
+cp koji_ca_cert.crt ./kojira/
 
 # Create the certificate and private key for koji-hub
 # Save the public certificate as koji-hub.crt
@@ -126,6 +127,11 @@ fi
 # Create a non-admin user certificate for use by the builders' readiness probe.
 if [ ! -f koji-builder/koji-builder-probe.crt ]; then
     create_certificate koji-builder-probe koji-builder
+fi
+
+# Create the kojira user certificate
+if [ ! -f kojira/kojira.crt ]; then
+    create_certificate kojira
 fi
 
 echo ""
