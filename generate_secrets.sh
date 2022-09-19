@@ -119,6 +119,10 @@ if [ ! -f koji-builder/koji-builder-aarch64.crt ]; then
     create_certificate koji-builder-aarch64 koji-builder
 fi
 
+if [ ! -f koji-builder/koji-builder-x86_64.crt ]; then
+    create_certificate koji-builder-x86_64 koji-builder
+fi
+
 # Create a non-admin user certificate for use by the builders' readiness probe.
 if [ ! -f koji-builder/koji-builder-probe.crt ]; then
     create_certificate koji-builder-probe koji-builder

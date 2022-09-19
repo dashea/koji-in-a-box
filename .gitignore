@@ -9,5 +9,6 @@
 /koji-web/koji-web.crt
 /koji-web/koji_ca_cert.crt
 /koji-builder/koji-builder-aarch64.crt
+/koji-builder/koji-builder-x86_64.crt
 /koji-builder/koji-builder-probe.crt
 /koji-builder/koji_ca_cert.crt
