@@ -3,6 +3,7 @@ services:
   # Koji < 1.30 does not work with Postgres 14
   db:
     image: docker.io/library/postgres:13.8
+    command: postgres -c 'max_connections=200'
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/koji-postgres-password

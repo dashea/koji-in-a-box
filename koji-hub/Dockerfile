@@ -13,6 +13,7 @@ RUN dnf install --repo=fedora --setopt=tsflags= -y koji-0:1.28.0-1.fc36 && \
 # Create config changes that do not depends on runtime secrets
 # /etc/httpd/conf.d/kojihub.conf: Configure for authentication via SSL certificates, add a ServerName
 # /etc/httpd/conf.d/ssl.conf: Set the CA certificate and public certificate (private key is set in entrypoint using secret)
+# /etc/httpd/conf.d/limits.conf: Set connection limits to keep the koji-hub process under control
 # /etc/koji-hub/hub.conf: Configure to look for username in certificate CN, add a ProxyDN to allow koji-web to connect
 # /etc/koji.conf: Create a localhost profile for the koji CLI to be used by healthchecks (cert is set in entrypoint using secret)
 #   NB: The ProxyDN settings must match the CN settings used to generated the certificates. See generate_secrets.conf.
@@ -34,6 +35,17 @@ RUN { \
         echo "SSLCertificateChainFile /etc/pki/koji/koji_ca_cert.crt"; \
         echo "SSLCACertificateFile /etc/pki/koji/koji_ca_cert.crt"; \
     } >> /etc/httpd/conf.d/ssl.conf && \
+    { \
+        echo "<IfModule mpm_prefork_module>"; \
+        echo "  MaxConnectionsPerChild 50";\
+        echo "</IfModule>";\
+        echo "<IfModule mpm_event_module>"; \
+        echo "  MaxConnectionsPerChild 50";\
+        echo "</IfModule>"; \
+        echo "<IfModule mpm_worker_module>"; \
+        echo "  MaxConnectionsPerChild 50";\
+        echo "</IfModule>"; \
+    } > /etc/httpd/conf.d/limits.conf && \
     { \
         echo "DNUsernameComponent = CN"; \
         echo "ProxyDNs = CN=*,OU=koji-web,O=Koji in a Box,L=Boston,ST=Massachusetts,C=US"; \
