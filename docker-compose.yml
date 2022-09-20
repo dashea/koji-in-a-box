@@ -191,12 +191,9 @@ volumes:
     driver: local
 
 networks:
-  db:
-    internal: true
-  koji-backend:
-    internal: true
-  git:
-    internal: true
+  db: {}
+  koji-backend: {}
+  git: {}
 
 secrets:
   koji-postgres-password:
