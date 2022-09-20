@@ -22,11 +22,9 @@ if [ ! -f "$KOJI_WEB_CERTIFICATE_KEY" ]; then
 fi
 
 # Finish configuration:
-# Create the certifcate file referenced in /etc/kojiweb/web.conf
+# Create the certifcate files referenced in /etc/kojiweb/web.conf and /etc/httpd/conf.d/ssl.conf
 cat /etc/pki/koji/koji-web.crt "$KOJI_WEB_CERTIFICATE_KEY" > /etc/pki/koji/koji-web.pem
-
-# Add the key file configuration to httpd
-echo "SSLCertificateKeyFile $KOJI_WEB_CERTIFICATE_KEY" >> /etc/httpd/conf.d/ssl.conf
+cp "$KOJI_WEB_CERTIFICATE_KEY" /etc/pki/koji/koji-web.key
 
 # Set the secret
 touch /etc/kojiweb/web.conf.d/secret.conf

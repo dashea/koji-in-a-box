@@ -25,8 +25,8 @@ PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"
 export PGPASSWORD
 
 # Finish configuration:
-# Add the certificate key path to /etc/httpd/conf.d/ssl.conf
-echo "SSLCertificateKeyFile ${KOJI_HUB_CERTIFICATE_KEY}" >> /etc/httpd/conf.d/ssl.conf
+# Create the key file referenced by /etc/httpd/conf.d/ssl.conf
+cp "$KOJI_HUB_CERTIFICATE_KEY" /etc/pki/koji/koji-hub.key
 
 # Create a configuration file containing the database password
 touch /etc/koji-hub/hub.conf.d/secret.conf

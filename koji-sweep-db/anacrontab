@@ -1,0 +1,6 @@
+# Disable attempts to email job output anywhere
+MAILTO=""
+
+# Redirect to PID 1's stdout and stderr so that the job output is output through docker
+# TODO this makes selinux complain
+@daily 0 koji-sweep-db /usr/sbin/koji-sweep-db >/proc/1/fd/1 2>/proc/1/fd/2
