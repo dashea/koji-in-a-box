@@ -43,6 +43,8 @@ services:
       - koji-backend
     expose:
       - "443"
+    ports:
+      - "8081:443"
     healthcheck:
       test: ["CMD", "koji", "-p", "localhost", "moshimoshi"]
       interval: 5s

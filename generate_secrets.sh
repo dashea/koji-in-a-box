@@ -27,6 +27,40 @@ create_certificate()
     rm "${basename}.csr"
 }
 
+create_localhost_certificate()
+{
+    basename="$1"
+    secret_name="${basename}-certificate-key"
+
+    # Remove the secret if it already exists
+    if podman secret inspect "$secret_name" >/dev/null 2>&1 ; then
+        podman secret rm "$secret_name"
+    fi
+
+    cat - > "${basename}.cfg" << EOF
+[req]
+req_extensions = req_ext
+
+[req_ext]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = $basename
+DNS.2 = localhost
+DNS.3 = localhost.localdomain
+EOF
+
+    openssl req -new -noenc \
+        -subj "/C=${CA_COUNTRY}/ST=${CA_STATEORPROVINCE}/L=${CA_LOCALITY}/O=${CA_ORGANIZATION}/OU=${basename}/CN=${basename}" \
+        -config "${basename}.cfg" \
+        -newkey rsa:2048 -passout 'pass:' \
+        -out "${basename}.csr" -keyout - | podman secret create "$secret_name" -
+    openssl x509 -req -CA koji_ca_cert.crt -CAkey koji_ca_cert.key -passin 'pass:' \
+        -copy_extensions copy \
+        -in "$basename".csr -out "${basename}/${basename}.crt"
+    rm "${basename}.cfg" "${basename}.csr"
+}
+
 # Create a password for the koji-hub to postgres connection
 # Do no replace the password if it is already set. The value is only used by the postgres
 # container when the database is initially created. Replacing the postgres password after the database has been
@@ -55,7 +89,7 @@ cp koji_ca_cert.crt ./kojira/
 # Save the public certificate as koji-hub.crt
 # Save the private key as a podman secret named koji-hub-certificate-key
 if [ ! -f koji-hub/koji-hub.crt ]; then
-    create_certificate koji-hub
+    create_localhost_certificate koji-hub
 fi
 
 # Create the certificate for the admin user
@@ -83,32 +117,7 @@ fi
 
 # Create the koji-web certificate
 if [ ! -f koji-web/koji-web.crt ]; then
-    cat - > koji-web.cfg << EOF
-[req]
-req_extensions = req_ext
-
-[req_ext]
-subjectAltName = @alt_names
-
-[alt_names]
-DNS.1 = koji-web
-DNS.2 = localhost
-DNS.3 = localhost.localdomain
-EOF
-
-    if podman secret inspect "koji-web-certificate-key" >/dev/null 2>&1 ; then
-        podman secret rm "koji-web-certificate-key"
-    fi
-
-    openssl req -new -noenc \
-        -subj "/C=${CA_COUNTRY}/ST=${CA_STATEORPROVINCE}/L=${CA_LOCALITY}/O=${CA_ORGANIZATION}/OU=koji-web/CN=koji-web" \
-        -config koji-web.cfg \
-        -newkey rsa:2048 -passout 'pass:' \
-        -out koji-web.csr -keyout - | podman secret create "koji-web-certificate-key" -
-    openssl x509 -req -CA koji_ca_cert.crt -CAkey koji_ca_cert.key -passin 'pass:' \
-        -copy_extensions copy \
-        -in koji-web.csr -out koji-web/koji-web.crt
-    rm koji-web.cfg koji-web.csr
+    create_localhost_certificate koji-web
 fi
 
 # Create a secret for the `Secret` setting of koji-web

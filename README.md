@@ -20,7 +20,7 @@ Create a koji profile pointing to your local servers:
 mkdir ~/.koji
 cat - <<EOF
 [local-koji]
-server = https://localhost:8080/kojihub
+server = https://localhost:8081/kojihub
 weburl = https://localhost:8080/koji
 authtype = ssl
 cert = ~/.koji/local-koji-user.pem
