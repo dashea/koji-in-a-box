@@ -29,11 +29,13 @@ RUN { \
         echo "SSLProxyCACertificateFile /etc/pki/koji/koji_ca_cert.crt"; \
         echo "SSLProxyMachineCertificateFile /etc/pki/koji/koji-web.pem"; \
         echo "ProxyPass /kojihub https://koji-hub/kojihub"; \
+        echo "ProxyPass /kojifiles https://koji-hub/kojifiles"; \
         echo "ProxyPassReverse /kojihub https://koji-hub/kojihub"; \
+        echo "ProxyPassReverse /kojifiles https://koji-hub/kojifiles"; \
     } >> /etc/httpd/conf.d/ssl.conf && \
     echo "ServerName koji-web" >> /etc/httpd/conf/httpd.conf && \
     sed -i -e 's|^KojiHubURL = .*|KojiHubURL = https://koji-hub/kojihub|' \
-           -e 's|^KojiFilesURL = .*|KojiFilesURL = https://koji-hub/kojifiles|' \
+           -e 's|^KojiFilesURL = .*|KojiFilesURL = /kojifiles|' \
            -e 's|^# KojiHubCA = .*|KojiHubCA = /etc/pki/koji/koji_ca_cert.crt|' \
            -e 's|^# WebAuthType = .*|WebAuthType = ssl|' \
            -e 's|^# WebCert = .*|WebCert = /etc/pki/koji/koji-web.pem|' \
