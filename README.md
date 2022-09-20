@@ -77,6 +77,65 @@ And then start everything up
 podman-compose up
 ```
 
+### Bootstrap the build environment
+
+The koji-admin container provides the credentials for issuing admin commands to the koji-hub.
+Enter the container to get started:
+
+```sh
+podman-compose exec koji-admin /bin/sh
+```
+
+The first thing to do is create some tags.
+Create a tag to act as a root of the repository you will be creating, and a build tag beneath this tag.
+
+```sh
+koji add-tag f36-addons
+koji add-tag --parent f36-addons --arches "x86_64 aarch64" f36-addons-build
+```
+
+If starting with external repos, see [External Repository Server Bootstrap](https://docs.pagure.org/koji/external_repo_server_bootstrap/).
+Otherwise see [Koji Server Bootstrap](https://docs.pagure.org/koji/server_bootstrap/).
+
+The following example adds Fedora 36 as an external repo:
+
+```sh
+koji add-external-repo -t f36-addons-build f36-repo https://dl.fedoraproject.org/pub/fedora/linux/releases/36/Everything/\$arch/os/
+koji add-external-repo -t f36-addons-build f36-updates-repo https://dl.fedoraproject.org/pub/fedora/linux/updates/36/Everything/\$arch/
+```
+
+Add the -build tag as a build target:
+
+```sh
+koji add-target f36-addons f36-addons-build
+```
+
+Add build groups to the build tag:
+
+```sh
+koji add-group f36-addons-build build
+koji add-group f36-addons-build srpm-build
+```
+
+Add packages to the build groups.
+If basing things on Fedora, it's probably easiest to just do what Fedora did.
+See [Koji Server Bootstrap](https://docs.pagure.org/koji/server_bootstrap/) for information on fetching the Fedora configuration, which you will not be able to do from within the containers because they lack the configuration and utilities and external internet access for krb5 authentication.
+The following adds the packages currently configured for Fedora 36 in the `build` and `srpm-build` groups:
+
+```sh
+koji add-group-pkg f36-addons-build build bash bzip2 coreutils cpios diffutils fedora-release findutils gawk glibc-minimal-langpack grep gzip info patch redhat-rpm-config rpm-build sed shadow-utils tar unzip util-linux which xz
+koji add-group-pkg f36-addons-build srpm-build bash fedora-release fedpkg-minimal glibc-minimal gnupg2 redhat-rpm-config rpm-build shadow-utils
+```
+
+Generate the repo:
+
+```sh
+koji regen-repo f36-addons-build
+```
+
+This will probably take a while.
+At the end of the process, you should have a koji environment ready to accept builds.
+
 ### Use it
 
 The koji configuration above creates a profile named `local-koji`.
