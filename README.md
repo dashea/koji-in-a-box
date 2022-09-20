@@ -141,7 +141,7 @@ At the end of the process, you should have a koji environment ready to accept bu
 The koji configuration above creates a profile named `local-koji`.
 To access the koji services using the koji CLI, run `koji -p local-koji ...`.
 
-## An overview of the guts
+## Other notes
 
 ### Authentication
 
