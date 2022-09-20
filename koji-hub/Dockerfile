@@ -48,7 +48,7 @@ RUN { \
     } > /etc/httpd/conf.d/limits.conf && \
     { \
         echo "DNUsernameComponent = CN"; \
-        echo "ProxyDNs = CN=*,OU=koji-web,O=Koji in a Box,L=Boston,ST=Massachusetts,C=US"; \
+        echo "ProxyDNs = CN=koji-web,OU=koji-web,O=Koji in a Box,L=Boston,ST=Massachusetts,C=US"; \
     } >> /etc/koji-hub/hub.conf && \
     { \
         echo "[localhost]"; \
