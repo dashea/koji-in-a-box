@@ -186,16 +186,38 @@ services:
     environment:
       KOJIRA_CERTIFICATE_KEY: /run/secrets/kojira-certificate-key
 
+  dist-git:
+    build:
+      context: ./dist-git
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${KOJI_GIT_PATH:-/srv/koji-git}
+        target: /var/lib/dist-git/git
+        read_only: true
+      - lookaside_cache:/var/lib/dist-git/cache/lookaside/pkgs
+    networks:
+      - dist-git
+    secrets:
+      - dist-git-certificate-key
+    environment:
+      DIST_GIT_CERTIFICATE_KEY: /run/secrets/dist-git-certificate-key
+    ports:
+      - "8082:443"
+
 volumes:
   db:
     driver: local
   kojidata:
+    driver: local
+  lookaside_cache:
     driver: local
 
 networks:
   db: {}
   koji-backend: {}
   git: {}
+  dist-git: {}
 
 secrets:
   koji-postgres-password:
@@ -215,4 +237,6 @@ secrets:
   koji-builder-x86_64-certificate-key:
     external: true
   kojira-certificate-key:
+    external: true
+  dist-git-certificate-key:
     external: true

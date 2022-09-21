@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
 # CA variables, replace as desired
-# If these values are changed, they must be changed in koji-hub/Dockerfie as well, when creating the ProxyDNs setting in /etc/koji-hub/hub.conf.
+# If these values are changed, they must be changed in koji-hub/proxy-dns.conf and dist-git/ssl.conf as well
 CA_COUNTRY="US"
 CA_STATEORPROVINCE="Massachusetts"
 CA_LOCALITY="Boston"
@@ -84,6 +84,7 @@ cp koji_ca_cert.crt ./koji-admin/
 cp koji_ca_cert.crt ./koji-web/
 cp koji_ca_cert.crt ./koji-builder/
 cp koji_ca_cert.crt ./kojira/
+cp koji_ca_cert.crt ./dist-git/
 
 # Create the certificate and private key for koji-hub
 # Save the public certificate as koji-hub.crt
@@ -141,6 +142,11 @@ fi
 # Create the kojira user certificate
 if [ ! -f kojira/kojira.crt ]; then
     create_certificate kojira
+fi
+
+# Create the dist-git certificate
+if [ ! -f dist-git/dist-git.crt ]; then
+    create_localhost_certificate dist-git
 fi
 
 echo ""

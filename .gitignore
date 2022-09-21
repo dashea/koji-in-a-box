@@ -14,3 +14,5 @@
 /koji-builder/koji_ca_cert.crt
 /kojira/kojira.crt
 /kojira/koji_ca_cert.crt
+/dist-git/dist-git.crt
+/dist-git/koji_ca_cert.crt
