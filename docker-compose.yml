@@ -143,6 +143,8 @@ services:
     environment:
       KOJI_BUILDER_CERTIFICATE_KEY: /run/secrets/koji-builder-aarch64-certificate-key
       KOJI_BUILDER_PROBE_CERTIFICATE_KEY: /run/secrets/koji-builder-probe-certificate-key
+    cap_add:
+      - SYS_ADMIN
 
   koji-builder-x86_64:
     build:
@@ -167,6 +169,8 @@ services:
     environment:
       KOJI_BUILDER_CERTIFICATE_KEY: /run/secrets/koji-builder-x86_64-certificate-key
       KOJI_BUILDER_PROBE_CERTIFICATE_KEY: /run/secrets/koji-builder-probe-certificate-key
+    cap_add:
+      - SYS_ADMIN
 
   kojira:
     build:
