@@ -10,7 +10,7 @@ This is a pretty weird thing to want to do.
 Install the necessary packages on your host system:
 
 ```sh
-sudo dnf install koji podman podman-compose openssl qemu-user-static
+sudo dnf install koji podman podman-compose openssl qemu-user-static rpkg
 sudo systemctl restart systemd-binfmt
 ```
 
@@ -136,10 +136,77 @@ koji regen-repo f36-addons-build
 This will probably take a while.
 At the end of the process, you should have a koji environment ready to accept builds.
 
-### Use it
+## Building a package
 
-The koji configuration above creates a profile named `local-koji`.
-To access the koji services using the koji CLI, run `koji -p local-koji ...`.
+Ok so it's running now what
+
+### CLI setup
+
+#### Rant
+
+The usual way to interact with dist-git repos is `rpkg`, the library that `fedpkg` is built on.
+Fedora has two versions of `rpkg`, and both of them are broken.
+
+The `rpkg` command from the `rpkg-utils` source package is abandoned and buggy.
+Attempting to upload a source file will crash because it calls its own git status function with the wrong number of arguments.
+
+`fedpkg` is currently built on top of the `pyrpkg` library in the `rpkg` source package.
+`pyrpkg` doesn't support certificate settings when downloading files, and also doesn't actually read certificate settings from the config.
+
+`rpkg-utils` mostly works (the upload succeeds before the `git status` bombs out), and the upload issue can be fixed by https://pagure.io/rpkg-util/pull-request/47.
+However, the commands and behavior are a little different from `fedpkg` since it's more oriented around COPR users, and since it's been abandoned it will likely stop working in the new future due to bit rot.
+I dunno, everything sucks.
+
+#### Configuration
+
+Create a configuration file with the local dist-git settings.
+By default, rpkg will check `~/.config/rpkg.conf` for the configuration file.
+
+Here is an example configuration that uses the default /etc/rpkg.conf as a template.
+The important parts are `clone_url`, `anon_clone_url`, `download_url`, `upload_url`, `cert_file` and `ca_cert`.
+`cert_file` and `ca_cert` use the same paths as the example koji.conf above.
+This example config also sets the base_output_path to the current directory because I found putting things in /tmp/rpkg to be kind of weird.
+
+```sh
+cat - > ~/.config/rpkg.conf <<EOF
+[rpkg]
+base_output_path = .
+
+[git]
+clone_url = file://${KOJI_GIT_PATH}/%(repo_path)s
+anon_clone_url = file://${KOJI_GIT_PATH}/%(repo_path)s
+default_namespace = rpms
+push_follow_tags = True
+clean_force = True
+clean_dirs = True
+
+[lookaside]
+download_url = https://localhost:8082/repo/pkgs/%(repo_path)s/%(filename)s/%(hashtype)s/%(hash)s/%(filename)s
+upload_url = https://localhosot:8082/repo/pkgs/upload.cgi
+cert_file = ${HOME}/.koji/local-koji-user.pem
+ca_cert = ${HOME}/.koji/local-koji-serverca.crt
+EOF
+```
+
+### Add a new package
+
+First, create the git repository.
+Add an empty .gitignore to initialize it.
+
+```sh
+mkdir -p "${KOJI_GIT_PATH}"
+git init --bare "${KOJI_GIT_PATH}/rpms/hello-world.git"
+tmpdir="$(mktemp -d)"
+( cd "$tmpdir"
+  git clone "${KOJI_GIT_PATH}/rpms/hello-world.git hello-world"
+  cd hello-world
+  touch .gitignore
+  git add .gitignore
+  git commit -q -m 'Initial setup of the repo'
+  git push
+)
+rm -rf "$tmpdir"
+```
 
 ## Other notes
 
