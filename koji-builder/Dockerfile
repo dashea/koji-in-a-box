@@ -14,7 +14,11 @@ ARG arch
 ENV ARCH=$arch
 COPY ./koji-builder-$arch.crt /etc/pki/koji/koji-builder.crt
 COPY ./koji-builder-probe.crt /etc/pki/koji/koji-builder-probe.crt
-COPY ./koji_ca_cert.crt /etc/pki/koji/koji_ca_cert.crt
+
+# Add the CA certificate as a system CA to simplify running mock
+# Mock will need the CA in order to download dependencies via koji-hub
+COPY ./koji_ca_cert.crt /etc/pki/ca-trust/source/anchors/
+RUN update-ca-trust extract
 
 COPY ./koji-builder-entrypoint.sh /
 ENTRYPOINT ["/koji-builder-entrypoint.sh"]
