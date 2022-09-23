@@ -213,7 +213,6 @@ First, create the git repository.
 Add an empty .gitignore to initialize it.
 
 ```sh
-mkdir -p "${KOJI_GIT_PATH}"
 git init --bare "${KOJI_GIT_PATH}/rpms/hello-world.git"
 tmpdir="$(mktemp -d)"
 ( cd "$tmpdir"
