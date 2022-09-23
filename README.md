@@ -11,7 +11,6 @@ Install the necessary packages on your host system:
 
 ```sh
 sudo dnf install koji podman podman-compose openssl qemu-user-static rpkg
-sudo systemctl restart systemd-binfmt
 ```
 
 Create a koji profile pointing to your local servers:
@@ -27,6 +26,26 @@ cert = ~/.koji/local-koji-user.pem
 serverca = ~/.koji/local-koji-serverca.crt
 EOF
 ```
+
+Running cross-arch builders is handled by qemu-user-static and binfmt_misc handlers registered by `systemd-binfmt`.
+Some modifications to the binfmt settings are needed in order to allow mock to run, since it depends on an unreadable setuid binary.
+
+```sh
+for arch in x86_64 aarch64 ; do
+  if [ -f /usr/lib/binfmt.d/qemu-$arch-static.conf ]; then
+    sudo cp /usr/lib/binfmt.d/qemu-$arch-static.conf /etc/binfmt.d/
+    sudo sed -i 's|:\([^:]*\)$|:OC\1|' /etc/binfmt.d/qemu-$arch-static.conf
+  fi
+done
+sudo systemctl restart systemd-binfmt
+```
+
+This will add the `O` and `C` flags to the binfmt configuration.
+`O` changes the behavior of binfmt_misc so that binfmt_misc will open the binary and pass a file descriptor to the interpreter (qemu) instead of passing a path to the interpeter and having the interpeter open the file.
+This allows binfmt_misc to be used with non-readable files, in our case `/usr/sbin/userhelper`.
+`C` instructs binfmt_misc to use the binary to calculate credentials of the new process, allowing for setuid/setgid binaries.
+
+These flags have security implications for your host system and should be used with care.
 
 ### Initialize the secrets
 

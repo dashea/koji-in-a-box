@@ -1,0 +1,31 @@
+From bdf6187b4e28f6c46aa466a458ac228ba9140fbb Mon Sep 17 00:00:00 2001
+From: David Shea <reallylongword@gmail.com>
+Date: Fri, 23 Sep 2022 14:54:25 -0400
+Subject: [PATCH] Skip the setregid call in _elevatePrivs
+
+Somehow this call causes an error in qemu with the following message:
+
+  ERROR:../accel/tcg/cpu-exec.c:928:cpu_exec: assertion failed: (cpu == current_cpu)
+  Bail out! ERROR:../accel/tcg/cpu-exec.c:928:cpu_exec: assertion failed: (cpu == current_cpu)
+
+Elevating groups isn't necessary here so just skip it.
+---
+ mock/py/mockbuild/uid.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mock/py/mockbuild/uid.py b/mock/py/mockbuild/uid.py
+index f0f5972b..50760412 100644
+--- a/mock/py/mockbuild/uid.py
++++ b/mock/py/mockbuild/uid.py
+@@ -80,7 +80,7 @@ class UidManager(object):
+     # pylint: disable=no-self-use
+     def _elevatePrivs(self):
+         setresuid(0, 0, 0)
+-        os.setregid(0, 0)
++        #os.setregid(0, 0)
+ 
+     @traceLog()
+     def become_user_without_push(self, uid, gid=None):
+-- 
+2.37.3
+
