@@ -129,6 +129,7 @@ services:
     restart: unless-stopped
     networks:
       - git
+      - dist-git
       - koji-backend
     volumes:
       - kojidata:/mnt/koji:ro
@@ -155,6 +156,7 @@ services:
     restart: unless-stopped
     networks:
       - git
+      - dist-git
       - koji-backend
     volumes:
       - kojidata:/mnt/koji:ro

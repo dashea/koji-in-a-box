@@ -155,6 +155,29 @@ koji regen-repo f36-addons-build
 This will probably take a while.
 At the end of the process, you should have a koji environment ready to accept builds.
 
+### Setup the common repo
+
+The builders are configured to download package sources using a script in the 'common' repo.
+The script does not exist yet.
+The build chroot used by `buildSRPMFromSCM` will include the `fedpkg-minimal` package, which can be configured to download sources from the local dist-git server.
+Just set the `baseurl` environment variable and call `fedpkg-base`.
+
+```sh
+git init --bare "${KOJI_GIT_PATH}/rpms/common.git"
+tmpdir="$(mktemp -d)"
+( cd "$tmpdir"
+  git clone "${KOJI_GIT_PATH}/rpms/common.git" common
+  cd common
+  echo '#!/bin/sh' > get_sources
+  echo 'baseurl=https://dist-git/repo/pkgs/rpms fedpkg-base' >> get_sources
+  chmod +x get_sources
+  git add get_sources
+  git commit -m 'Add the get_sources script'
+  git push
+)
+rm -rf "$tmpdir"
+```
+
 ## Building a package
 
 Ok so it's running now what
@@ -166,64 +189,249 @@ Ok so it's running now what
 The usual way to interact with dist-git repos is `rpkg`, the library that `fedpkg` is built on.
 Fedora has two versions of `rpkg`, and both of them are broken.
 
-The `rpkg` command from the `rpkg-utils` source package is abandoned and buggy.
+The `rpkg` command from the `rpkg-utils` source package is abandoned and buggy and oriented specifically around [COPR](https://copr.fedorainfracloud.org/) usage.
 Attempting to upload a source file will crash because it calls its own git status function with the wrong number of arguments.
 
 `fedpkg` is currently built on top of the `pyrpkg` library in the `rpkg` source package.
 `pyrpkg` doesn't support certificate settings when downloading files, and also doesn't actually read certificate settings from the config.
+Additionally, it's not usable without some additional work.
+`pyrpkg` has Red Hat specific settings hard coded in multiple places, and `fedpkg` solves this by overriding the code itself instead of setting options via the config file.
+Additionally, while the upstream (pyrpkg) [rpkg](https://pagure.io/rpkg) project includes a CLI frontend, Fedora packages it in `/usr/share/rpkg/examples` instead of `/usr/bin`, so that it doesn't conflict with the `rpkg` command from `rpkg-utils` (the broken one, above).
 
-`rpkg-utils` mostly works (the upload succeeds before the `git status` bombs out), and the upload issue can be fixed by https://pagure.io/rpkg-util/pull-request/47.
-However, the commands and behavior are a little different from `fedpkg` since it's more oriented around COPR users, and since it's been abandoned it will likely stop working in the new future due to bit rot.
+The `pyrpkg` option ultimately offers the least amount of friction.
+It's what's used for "normal" Fedora build environments, and the source download using `fedpkg-minimal` will use the same assumptions used in a `pyrpkg`-based source upload.
+Some commands are still unusuable with the script below (like `srpm` and `build`), but it's not the end of the world.
+
 I dunno, everything sucks.
 
 #### Configuration
 
-Create a configuration file with the local dist-git settings.
-By default, rpkg will check `~/.config/rpkg.conf` for the configuration file.
+Create a CLI frontend from the example.
+The following script is based on /usr/share/rpkg/examples/cli/usr/bin/rpkg.
+The default config path has been changed to ~/.config/rpkg/mypkg.conf, and it patches the `pyrpkg.Commands` class to work around the missing certificate settings.
+The script also sets `source_entry_type`, which is also not read from the config file for some reason.
+Install the script as `mypkg` somewhere in your path; e.g., `~/.local/bin/mypkg`.
 
-Here is an example configuration that uses the default /etc/rpkg.conf as a template.
-The important parts are `clone_url`, `anon_clone_url`, `download_url`, `upload_url`, `cert_file` and `ca_cert`.
-`cert_file` and `ca_cert` use the same paths as the example koji.conf above.
-This example config also sets the base_output_path to the current directory because I found putting things in /tmp/rpkg to be kind of weird.
+```python
+#!/usr/bin/env python
+# rpkg - a script to interact with the Red Hat Packaging system
+#
+# Copyright (C) 2011 Red Hat Inc.
+# Author(s): Jesse Keating <jkeating@redhat.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
+# the full text of the license.
+
+import argparse
+import logging
+import os
+import sys
+
+import six
+from six.moves import configparser
+
+import pyrpkg
+import pyrpkg.cli
+import pyrpkg.utils
+
+# Setup an argparser and parse the known commands to get the config file
+parser = argparse.ArgumentParser(add_help=False)
+parser.add_argument('-C', '--config', help='Specify a config file to use',
+                    default=os.path.join(os.path.expanduser('~'), '.config', 'rpkg', 'mypkg.conf'))
+
+(args, other) = parser.parse_known_args()
+
+# Make sure we have a sane config file
+if not os.path.exists(args.config) and not other[-1] in ['--help', '-h']:
+    sys.stderr.write('Invalid config file %s\n' % args.config)
+    sys.exit(1)
+
+# Setup a configuration object and read config file data
+if six.PY2:
+    config = configparser.SafeConfigParser()
+else:
+    # The SafeConfigParser class has been renamed to ConfigParser in Python 3.2.
+    config = configparser.ConfigParser()
+config.read(args.config)
+
+client = pyrpkg.cli.cliClient(config)
+client.do_imports()
+client.parse_cmdline()
+
+if not client.args.path:
+    try:
+        client.args.path = pyrpkg.utils.getcwd()
+    except:
+        print('Could not get current path, have you deleted it?')
+        sys.exit(1)
+
+# Set source_entry_type to the format used by fedpkg
+cmd = client.cmd
+cmd.source_entry_type = 'bsd'
+
+# Patch in the missing SSL settings
+# ca_cert and cert_file are unsettable properties, so replace them in the class
+config = dict(client.config.items(client.name, raw=True))
+pyrpkg.Commands.ca_cert = config['ca_cert']
+pyrpkg.Commands.cert_file = config['client_cert']
+
+# setup the logger -- This logger will take things of INFO or DEBUG and
+# log it to stdout.  Anything above that (WARN, ERROR, CRITICAL) will go
+# to stderr.  Normal operation will show anything INFO and above.
+# Quiet hides INFO, while Verbose exposes DEBUG.  In all cases WARN or
+# higher are exposed (via stderr).
+log = pyrpkg.log
+client.setupLogging(log)
+
+if client.args.v:
+    log.setLevel(logging.DEBUG)
+elif client.args.q:
+    log.setLevel(logging.WARNING)
+else:
+    log.setLevel(logging.INFO)
+
+# Run the necessary command
+try:
+    sys.exit(client.args.command())
+except KeyboardInterrupt:
+    pass
+```
+
+Create a configuration file with the local dist-git settings.
 
 ```sh
-cat - > ~/.config/rpkg.conf <<EOF
-[rpkg]
-base_output_path = .
-
-[git]
-clone_url = file://${KOJI_GIT_PATH}/%(repo_path)s
-anon_clone_url = file://${KOJI_GIT_PATH}/%(repo_path)s
-default_namespace = rpms
-push_follow_tags = True
-clean_force = True
-clean_dirs = True
-
-[lookaside]
-download_url = https://localhost:8082/repo/pkgs/%(repo_path)s/%(filename)s/%(hashtype)s/%(hash)s/%(filename)s
-upload_url = https://localhosot:8082/repo/pkgs/upload.cgi
-cert_file = ${HOME}/.koji/local-koji-user.pem
+mkdir -p ~/.config/rpkg
+cat - > ~/.config/rpkg/mypkg.conf <<EOF
+[mypkg]
+lookaside = https://localhost:8082/repo/pkgs
+lookasidehash = sha512
+lookaside_cgi = https://localhost:8082/repo/pkgs/upload.cgi
+gitbaseurl = file://${KOJI_GIT_PATH}/%(repo)s.git
+anongiturl = file://${KOJI_GIT_PATH}/%(repo)s.git
+branchre = f\d$|f\d\d$|el\d$|main$
+kojiprofile = local-koji
+build_client = koji
 ca_cert = ${HOME}/.koji/local-koji-serverca.crt
+client_cert = ${HOME}/.koji/local-koji-user.pem
 EOF
 ```
 
 ### Add a new package
 
+The following example uses the [mkrpm](https://github.com/dashea/mkrpm) project.
+I don't remember if `mkrpm` actually works or not, but it is some C code that compiles and is not packaged in Fedora, so it's good enough for here.
+
 First, create the git repository.
 Add an empty .gitignore to initialize it.
 
 ```sh
-git init --bare "${KOJI_GIT_PATH}/rpms/hello-world.git"
+git init --bare "${KOJI_GIT_PATH}/rpms/mkrpm.git"
 tmpdir="$(mktemp -d)"
 ( cd "$tmpdir"
-  git clone "${KOJI_GIT_PATH}/rpms/hello-world.git hello-world"
-  cd hello-world
+  git clone "${KOJI_GIT_PATH}/mkrpm.git" mkrpm
+  cd mkrpm
   touch .gitignore
   git add .gitignore
   git commit -q -m 'Initial setup of the repo'
   git push
 )
 rm -rf "$tmpdir"
+```
+
+Check out a copy of the git repo.
+
+```sh
+rpkg clone mkrpm
+cd mkrpm
+```
+
+Add a spec file as mkrpm.spec.
+
+```specfile
+%global commit 4f7587c3aa133bc834959065d3626f1bac5114ea
+%global shortcommit 4f7587c
+
+Name:    mkrpm
+Version: 0^20190530git%{shortcommit}
+Release: 1%{?dist}
+Summary: Tool for creating RPM archives without a spec file
+
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: libtool
+BuildRequires: gcc
+BuildRequires: libarchive-devel
+BuildRequires: openssl-devel
+
+# Used by tests
+BuildRequires: libcmocka-devel
+#BuildRequires: valgrind
+
+# NB: Upstream references GPLv3 or newer in source header files, but does not include a copy of the GPL
+# Upstream has been notified of this error but upstream also does not care very much
+License: GPLv3+
+URL:     https://github.com/dashea/mkrpm/
+Source0: https://github.com/dashea/mkrpm/archive/%{commit}/%{name}-%{shortcommit}.tar.gz
+
+%description
+This is a tool to create a RPM of a file or directory, without the use of spec files,
+rpmbuild, or librpm.
+
+This utility was built mainly as a side-effect of an effort to decipher and document the RPM file format.
+The actual utility may or may not work very well.
+
+This is a pre-release version.
+
+%prep
+%autosetup -n mkrpm-%{commit}
+
+%build
+./autogen.sh
+%configure
+%make_build
+
+%install
+%make_install
+
+%check
+# The tests don't run in rpmbuild due to the dumb way I built things and I don't feel like fixing it
+# make check check-valgrind
+
+%files
+%doc README.md docs/TAG-CODEX.md
+%{_bindir}/mkrpm
+
+%changelog
+* Sat Sep 24 2022 David Shea <reallylongword@gmail.com> - 0^20190530git457587c-1
+- Initial package
+```
+
+Download the sources and add them to dist-git.
+
+```sh
+spectool --get-files mkrpm.spec
+mypkg new-sources mkrpm-4f7587c.tar.gz
+```
+
+Commit and push.
+The `sources` and `.gitignore` file should already be staged for commit by `rpkg`.
+
+```sh
+git add mkrpm.spec
+git commit -m 'Initial package'
+git push
+```
+
+Build it.
+This command would be less ugly if one of the rpkg-based tools was set up right so uh FIXME I guess.
+The `main` fragment is the name of the git branch.
+Replace this with the value you use as `init.defaultBranch` (e.g., `master`).
+
+```sh
+koji -p local-koji build f36-addons 'git://git/rpms/mkrpm.git?#main'
 ```
 
 ## Other notes
