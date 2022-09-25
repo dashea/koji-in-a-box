@@ -324,7 +324,13 @@ EOF
 The following example uses the [mkrpm](https://github.com/dashea/mkrpm) project.
 I don't remember if `mkrpm` actually works or not, but it is some C code that compiles and is not packaged in Fedora, so it's good enough for here.
 
-First, create the git repository.
+Add the package to your koji tag.
+
+```sh
+podman-compose exec koji-admin -- koji add-pkg --owner koji-user f36-addons mkrpm
+```
+
+Create the git repository.
 Add an empty .gitignore to initialize it.
 
 ```sh
