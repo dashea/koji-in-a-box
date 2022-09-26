@@ -407,7 +407,7 @@ This is a pre-release version.
 # make check check-valgrind
 
 %files
-%doc README.md docs/TAG-CODEX.md
+%doc README.md docs/TAG-CODEX.txt
 %{_bindir}/mkrpm
 
 %changelog
