@@ -11,4 +11,5 @@ COPY ./kojira.crt /etc/pki/koji/kojira.crt
 COPY ./koji_ca_cert.crt /etc/pki/koji/koji_ca_cert.crt
 
 COPY ./kojira-entrypoint.sh /
+VOLUME /mnt/koji
 ENTRYPOINT ["/kojira-entrypoint.sh"]

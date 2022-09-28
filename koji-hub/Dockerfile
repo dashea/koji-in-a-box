@@ -29,4 +29,5 @@ COPY ./koji-hub.crt /etc/pki/koji/koji-hub.crt
 COPY ./koji_ca_cert.crt /etc/pki/koji/koji_ca_cert.crt
 
 COPY ./koji-hub-entrypoint.sh /
+VOLUME /mnt/koji
 ENTRYPOINT ["/koji-hub-entrypoint.sh"]

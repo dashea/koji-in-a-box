@@ -14,4 +14,7 @@ COPY ./dist-git.crt /etc/pki/koji/dist-git.crt
 COPY ./koji_ca_cert.crt /etc/pki/koji/koji_ca_cert.crt
 
 COPY ./dist-git-entrypoint.sh /
+
+VOLUME /var/lib/dist-git/git
+VOLUME /var/lib/dist-git/cache/lookaside/pkgs
 ENTRYPOINT ["/dist-git-entrypoint.sh"]

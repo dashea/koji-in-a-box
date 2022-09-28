@@ -23,4 +23,5 @@ COPY ./0001-Skip-the-setregid-call-in-_elevatePrivs.patch /mock.patch
 RUN patch /usr/lib/python3.10/site-packages/mockbuild/uid.py /mock.patch
 
 COPY ./koji-builder-entrypoint.sh /
+VOLUME /mnt/koji
 ENTRYPOINT ["/koji-builder-entrypoint.sh"]
