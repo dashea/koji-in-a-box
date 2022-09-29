@@ -1,0 +1,66 @@
+{
+  "bindings": [
+    {
+      "arguments": {},
+      "destination": "robosignatory",
+      "destination_type": "queue",
+      "routing_key": "local-koji.buildsys.tag",
+      "source": "amq.topic",
+      "vhost": "/"
+    }
+  ],
+  "exchanges": [],
+  "global_parameters": [],
+  "parameters": [],
+  "permissions": [
+    {
+      "user": "koji-hub",
+      "vhost": "/",
+      "configure": ".*",
+      "read": ".*",
+      "write": ".*"
+    }
+  ],
+  "policies": [],
+  "queues": [
+    {
+      "name": "robosignatory",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "type": "classic",
+      "arguments": {}
+    }
+  ],
+  "rabbit_version": "3.9.10",
+  "rabbitmq_version": "3.9.10",
+  "topic_permissions": [
+    {
+      "user": "koji-hub",
+      "vhost": "/",
+      "exchange": "",
+      "read": "",
+      "write": ".*"
+    }
+  ],
+  "users": [
+    {
+      "name": "koji-hub",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "limits": {},
+      "password_hash": "9v3Oq03avGQc1TXHSL5lR8Tec69g8EKmDmb9rBpplnDUzsCy",
+      "tags": []
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/",
+      "limits": [],
+      "metadata": {
+        "name": "/",
+        "description": "koji message bus",
+        "tags": []
+      }
+    }
+  ]
+}

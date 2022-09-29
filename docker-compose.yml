@@ -226,12 +226,32 @@ services:
       SIGUL_SERVER_PACKAGE_SIGNING_KEY: /run/secrets/sigul-server-package-signing-key
       SIGUL_KEY_PASSPHRASE: /run/secrets/sigul-key-passphrase
 
+  message-bus:
+    build:
+      context: ./message-bus
+    restart: unless-stopped
+    volumes:
+      - message-bus:/var/lib/rabbitmq
+    networks:
+      - message-bus
+    secrets:
+      - message-bus-certificate-key
+    environment:
+      MESSAGE_BUS_CERTIFICATE_KEY: /run/secrets/message-bus-certificate-key
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 60s
+      timeout: 5s
+      retries: 10
+
 volumes:
   db:
     driver: local
   kojidata:
     driver: local
   lookaside_cache:
+    driver: local
+  message-bus:
     driver: local
 
 networks:
@@ -240,6 +260,7 @@ networks:
   git: {}
   dist-git: {}
   sigul-backend: {}
+  message-bus: {}
 
 secrets:
   koji-postgres-password:
@@ -267,4 +288,6 @@ secrets:
   sigul-server-package-signing-key:
     external: true
   sigul-key-passphrase:
+    external: true
+  message-bus-certificate-key:
     external: true

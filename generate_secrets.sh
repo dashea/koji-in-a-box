@@ -86,6 +86,7 @@ cp koji_ca_cert.crt ./kojira/
 cp koji_ca_cert.crt ./dist-git/
 cp koji_ca_cert.crt ./sigul-bridge/
 cp koji_ca_cert.crt ./sigul-server/
+cp koji_ca_cert.crt ./message-bus/
 
 # Create the certificate and private key for koji-hub
 # Save the public certificate as koji-hub.crt
@@ -183,6 +184,11 @@ fi
 # Generate a passphrase for the signing key
 podman secret inspect sigul-key-passphrase >/dev/null 2>&1 || \
     openssl rand -base64 32 | podman secret create sigul-key-passphrase -
+
+# Create the message-bus certificate
+if [ ! -f message-bus/message-bus.crt ]; then
+    create_certificate message-bus
+fi
 
 echo ""
 echo "Install certificate files on the host system:"
