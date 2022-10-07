@@ -109,7 +109,7 @@ The first thing to do is create some tags.
 Create a tag to act as a root of the repository you will be creating, and a build tag beneath this tag.
 
 ```sh
-koji add-tag f36-addons
+koji add-tag --arches="x86_64 aarch64" f36-addons
 koji add-tag --parent f36-addons --arches "x86_64 aarch64" f36-addons-build
 ```
 
