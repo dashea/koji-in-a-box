@@ -47,6 +47,45 @@ This allows binfmt_misc to be used with non-readable files, in our case `/usr/sb
 
 These flags have security implications for your host system and should be used with care.
 
+### SELinux modifications
+
+mock performs several remounts of ephemeral filesystems, which selinux as currently configured in Fedora forbids.
+Create a custom policy to allow mock to run inside a container.
+
+Create the following file as `mock-mount.te`:
+
+```sepolicy
+module mock-mount 1.0;
+
+require {
+	type tmpfs_t;
+	type proc_t;
+	type devpts_t;
+	type sysfs_t;
+	type device_t;
+	type container_t;
+	class filesystem { mount remount };
+	class dir mounton;
+}
+
+#============= container_t ==============
+allow container_t device_t:filesystem remount;
+allow container_t devpts_t:filesystem mount;
+allow container_t proc_t:dir mounton;
+allow container_t sysfs_t:filesystem remount;
+allow container_t tmpfs_t:filesystem mount;
+```
+
+Compile and install the module:
+
+```sh
+checkmodule -M -m -o mock-mount.mod mock-mount.te
+semodule_package -o mock-mount.pp -m mock-mount.mod
+sudo semodule -i mock-mount.pp
+```
+
+Of course, this has security implications so be aware of what you're doing and don't just blindly trust me, a person who does not understand nor care to understand selinux.
+
 ### Initialize the secrets
 
 Run `./generate_secrets.sh` to create the necessary certificate files and add secrets to podman.
