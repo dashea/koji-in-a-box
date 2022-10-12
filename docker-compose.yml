@@ -116,8 +116,8 @@ services:
       - git
     volumes:
       - type: bind
-        source: ${KOJI_GIT_PATH:-/srv/koji-git}
-        target: /srv/git
+        source: ${KOJI_GIT_PATH:-/var/lib/git/local-koji}
+        target: /var/lib/git
         read_only: true
 
   koji-builder-aarch64:

@@ -84,7 +84,35 @@ semodule_package -o mock-mount.pp -m mock-mount.mod
 sudo semodule -i mock-mount.pp
 ```
 
-Of course, this has security implications so be aware of what you're doing and don't just blindly trust me, a person who does not understand nor care to understand selinux.
+Additionally, git-daemon is not configured for container usage, so make some modifications there.
+
+Create the following as git-daemon-container.pp:
+
+```sepolicy
+module git-daemon-container 1.0;
+
+require {
+	type git_sys_content_t;
+	type container_t;
+	class file { map open read };
+	class dir read;
+}
+
+#============= container_t ==============
+allow container_t git_sys_content_t:dir read;
+allow container_t git_sys_content_t:file { open read };
+allow container_t git_sys_content_t:file map;
+```
+
+and:
+
+```sh
+checkmodule -M -m -o git-daemon-container.mod git-daemon-container.te
+semodule_package -o git-daemon-container.pp -m git-daemon-container.mod
+sudo semodule -i git-daemon-container.pp
+```
+
+Of course, this all has security implications so be aware of what you're doing and don't just blindly trust me, a person who does not understand nor care to understand selinux.
 
 ### Initialize the secrets
 
@@ -114,12 +142,14 @@ The git repositories are served out of a bind mount from the host's filesystem.
 This way interacting with git on the host just be done through local files.
 
 Create a directory where the git repos will live.
-The path can be any readable path.
-
-e.g., `mkdir ~/koji-git`.
-
+The path can be any readable path, but if you're using selinux the easiest way to get things to cooperate permissions-wise is to create a directory beneath `/var/lib/git`.
 The path is passed to podman-compose via the `KOJI_GIT_PATH` environment variable.
-e.g., `export KOJI_GIT_PATH=~/koji-git`.
+
+```sh
+sudo mkdir /var/lib/git/local-koji
+sudo chown $UID:$GID /var/lib/git/local-koji
+export KOJI_GIT_PATH=/var/lib/git/local-koji
+```
 
 ### Fire it up
 
