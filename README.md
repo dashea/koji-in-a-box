@@ -13,7 +13,8 @@ Install the necessary packages on your host system:
 sudo dnf install koji podman podman-compose openssl qemu-user-static rpkg
 ```
 
-Create a koji profile pointing to your local servers:
+Create a koji profile pointing to your local servers.
+The `generate_secrets.sh` script will create credentials for both regular and admin users, which can be accessed as separate koji profiles.
 
 ```sh
 mkdir ~/.koji
@@ -23,6 +24,13 @@ server = https://localhost:8081/kojihub
 weburl = https://localhost:8080/koji
 authtype = ssl
 cert = ~/.koji/local-koji-user.pem
+serverca = ~/.koji/local-koji-serverca.crt
+
+[local-admin]
+server = https://localhost:8081/kojihub
+weburl = https://localhost:8080/koji
+authtype = ssl
+cert = ~/.koji/local-koji-admin.pem
 serverca = ~/.koji/local-koji-serverca.crt
 EOF
 ```
@@ -167,19 +175,12 @@ podman-compose up
 
 ### Bootstrap the build environment
 
-The koji-admin container provides the credentials for issuing admin commands to the koji-hub.
-Enter the container to get started:
-
-```sh
-podman-compose exec koji-admin /bin/sh
-```
-
 The first thing to do is create some tags.
 Create a tag to act as a root of the repository you will be creating, and a build tag beneath this tag.
 
 ```sh
-koji add-tag --arches="x86_64 aarch64" f36-addons
-koji add-tag --parent f36-addons --arches "x86_64 aarch64" f36-addons-build
+koji -p local-admin add-tag --arches="x86_64 aarch64" f36-addons
+koji -p local-admin add-tag --parent f36-addons --arches "x86_64 aarch64" f36-addons-build
 ```
 
 If starting with external repos, see [External Repository Server Bootstrap](https://docs.pagure.org/koji/external_repo_server_bootstrap/).
@@ -188,21 +189,21 @@ Otherwise see [Koji Server Bootstrap](https://docs.pagure.org/koji/server_bootst
 The following example adds Fedora 36 as an external repo:
 
 ```sh
-koji add-external-repo -t f36-addons-build f36-repo https://dl.fedoraproject.org/pub/fedora/linux/releases/36/Everything/\$arch/os/
-koji add-external-repo -t f36-addons-build f36-updates-repo https://dl.fedoraproject.org/pub/fedora/linux/updates/36/Everything/\$arch/
+koji -p local-admin add-external-repo -t f36-addons-build f36-repo https://dl.fedoraproject.org/pub/fedora/linux/releases/36/Everything/\$arch/os/
+koji -p local-admin add-external-repo -t f36-addons-build f36-updates-repo https://dl.fedoraproject.org/pub/fedora/linux/updates/36/Everything/\$arch/
 ```
 
 Add the -build tag as a build target:
 
 ```sh
-koji add-target f36-addons f36-addons-build
+koji -p local-admin add-target f36-addons f36-addons-build
 ```
 
 Add build groups to the build tag:
 
 ```sh
-koji add-group f36-addons-build build
-koji add-group f36-addons-build srpm-build
+koji -p local-admin add-group f36-addons-build build
+koji -p local-admin add-group f36-addons-build srpm-build
 ```
 
 Add packages to the build groups.
@@ -211,14 +212,14 @@ See [Koji Server Bootstrap](https://docs.pagure.org/koji/server_bootstrap/) for 
 The following adds the packages currently configured for Fedora 36 in the `build` and `srpm-build` groups:
 
 ```sh
-koji add-group-pkg f36-addons-build build bash bzip2 coreutils cpios diffutils fedora-release findutils gawk glibc-minimal-langpack grep gzip info patch redhat-rpm-config rpm-build sed shadow-utils tar unzip util-linux which xz
-koji add-group-pkg f36-addons-build srpm-build bash fedora-release fedpkg-minimal glibc-minimal gnupg2 redhat-rpm-config rpm-build shadow-utils
+koji -p local-admin add-group-pkg f36-addons-build build bash bzip2 coreutils cpios diffutils fedora-release findutils gawk glibc-minimal-langpack grep gzip info patch redhat-rpm-config rpm-build sed shadow-utils tar unzip util-linux which xz
+koji -p local-admin add-group-pkg f36-addons-build srpm-build bash fedora-release fedpkg-minimal glibc-minimal gnupg2 redhat-rpm-config rpm-build shadow-utils
 ```
 
 Generate the repo:
 
 ```sh
-koji regen-repo f36-addons-build
+koji -p local-admin regen-repo f36-addons-build
 ```
 
 This will probably take a while.
@@ -396,7 +397,7 @@ I don't remember if `mkrpm` actually works or not, but it is some C code that co
 Add the package to your koji tag.
 
 ```sh
-podman-compose exec koji-admin -- koji add-pkg --owner koji-user f36-addons mkrpm
+koji -p local-admin add-pkg --owner koji-user f36-addons mkrpm
 ```
 
 Create the git repository.

@@ -1,16 +1,14 @@
 /koji_ca_cert.crt
 /koji_ca_cert.key
-/koji-admin/koji-admin.crt
-/koji-admin/koji_ca_cert.crt
 /koji-hub/koji-hub.crt
 /koji-hub/koji_ca_cert.crt
 /koji-user.p12
 /koji-user.pem
+/koji-admin.pem
 /koji-web/koji-web.crt
 /koji-web/koji_ca_cert.crt
 /koji-builder/koji-builder-aarch64.crt
 /koji-builder/koji-builder-x86_64.crt
-/koji-builder/koji-builder-probe.crt
 /koji-builder/koji_ca_cert.crt
 /kojira/kojira.crt
 /kojira/koji_ca_cert.crt

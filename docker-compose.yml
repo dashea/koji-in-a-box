@@ -36,6 +36,10 @@ services:
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/koji-postgres-password
       KOJI_HUB_CERTIFICATE_KEY: /run/secrets/koji-hub-certificate-key
+      KOJI_USERS: "koji-user koji-hub"
+      KOJI_BUILDERS: "x86_64 aarch64"
+      KOJI_BUILDER_x86_64: "x86_64"
+      KOJI_BUILDER_aarch64: "aarch64"
     volumes:
       - kojidata:/mnt/koji
     networks:
@@ -66,24 +70,6 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/koji-postgres-password
     networks:
       - db
-
-  koji-admin:
-    build:
-      context: ./koji-admin
-    depends_on:
-      koji-hub:
-        condition: service_healthy
-    restart: unless-stopped
-    secrets:
-      - koji-admin-certificate-key
-    environment:
-      KOJI_ADMIN_CERTIFICATE_KEY: /run/secrets/koji-admin-certificate-key
-      KOJI_ADMIN_ADD_USERS: "koji-user koji-builder-probe"
-      KOJI_ADMIN_BUILDERS: "x86_64 aarch64"
-      KOJI_ADMIN_BUILDER_aarch64: "aarch64"
-      KOJI_ADMIN_BUILDER_x86_64: "x86_64"
-    networks:
-      - koji-backend
 
   koji-web:
     build:
@@ -140,10 +126,8 @@ services:
         condition: service_started
     secrets:
       - koji-builder-aarch64-certificate-key
-      - koji-builder-probe-certificate-key
     environment:
       KOJI_BUILDER_CERTIFICATE_KEY: /run/secrets/koji-builder-aarch64-certificate-key
-      KOJI_BUILDER_PROBE_CERTIFICATE_KEY: /run/secrets/koji-builder-probe-certificate-key
     cap_add:
       - SYS_ADMIN
 
@@ -167,10 +151,8 @@ services:
         condition: service_started
     secrets:
       - koji-builder-x86_64-certificate-key
-      - koji-builder-probe-certificate-key
     environment:
       KOJI_BUILDER_CERTIFICATE_KEY: /run/secrets/koji-builder-x86_64-certificate-key
-      KOJI_BUILDER_PROBE_CERTIFICATE_KEY: /run/secrets/koji-builder-probe-certificate-key
     cap_add:
       - SYS_ADMIN
 
@@ -235,8 +217,6 @@ secrets:
   koji-web-certificate-key:
     external: true
   koji-web-secret:
-    external: true
-  koji-builder-probe-certificate-key:
     external: true
   koji-builder-aarch64-certificate-key:
     external: true

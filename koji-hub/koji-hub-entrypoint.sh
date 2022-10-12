@@ -3,6 +3,11 @@
 # REQUIRED ENVIRONMENT VARIABLES
 # - POSTGRES_PASSWORD_FILE: path to a file containing the password for the koji user in postgres
 # - KOJI_HUB_CERTIFICATE_KEY: path to a file containing the private key
+# OPTIONAL ENVIRONMENT VARIABLES
+# - KOJI_USERS: space-separated list of users to create
+# - KOJI_BUILDERS: space-separated list of builder names (will be created as koji-builder-<builder>
+# - KOJI_BUILDER_<builder-name>: List of architectures for given builder
+# The first listed builder is also added to the createrepo channel
 if [ -z "$POSTGRES_PASSWORD_FILE" ]; then
     echo "\$POSTGRES_PASSWORD_FILE must be set"
     exit 1
@@ -49,9 +54,72 @@ psql -d koji -h db -p 5432 -U koji -c '\d events' > /dev/null 2>&1 ||
 psql -d koji -h db -p 5432 -U koji <<EOF
 BEGIN;
 INSERT INTO users (name, status, usertype) VALUES ('koji-admin', 0, 0) ON CONFLICT DO NOTHING;
-INSERT INTO user_perms (user_id, perm_id, creator_id) (SELECT id, 1, id FROM users WHERE name = 'koji-admin') ON CONFLICT DO NOTHING;
+INSERT INTO user_perms (user_id, perm_id, creator_id)
+  (SELECT admin_user.id, admin_perm.id, admin_user.id
+   FROM (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user,
+        (SELECT id FROM permissions WHERE name = 'admin') AS admin_perm)
+  ON CONFLICT DO NOTHING;
 COMMIT;
 EOF
+
+for user in $KOJI_USERS ; do
+    psql -d koji -h db -p 5432 -U koji -v user="$user" <<EOF
+INSERT INTO users (name, status, usertype) VALUES (:'user', 0, 0) ON CONFLICT DO NOTHING;
+EOF
+done
+
+# Handle the kojira user separately, since it needs repo permissions
+psql -d koji -h db -p 5432 -U koji <<EOF
+BEGIN;
+INSERT INTO users (name, status, usertype) VALUES ('kojira', 0, 0) ON CONFLICT DO NOTHING;
+INSERT INTO user_perms (user_id, perm_id, creator_id)
+    (SELECT kojira_user.id, repo_perm.id, admin_user.id
+     FROM (SELECT id FROM users WHERE name = 'kojira') AS kojira_user,
+          (SELECT id FROM permissions WHERE name = 'repo') AS repo_perm,
+          (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user)
+    ON CONFLICT DO NOTHING;
+COMMIT;
+EOF
+
+# Create the builders
+firstbuilder=1
+for builder_arch in $KOJI_BUILDERS ; do
+    eval "archlist=\$KOJI_BUILDER_${builder_arch}"
+    hostname="koji-builder-${builder_arch}"
+
+    # shellcheck disable=SC2154,SC2086
+    psql -d koji -h db -p 5432 -U koji -v buildername="$hostname" -v builderarches="$archlist" <<EOF
+BEGIN;
+INSERT INTO users (name, status, usertype) VALUES (:'buildername', 0, 1) ON CONFLICT DO NOTHING;
+INSERT INTO host (user_id, name)
+   (SELECT id, name FROM users WHERE name = :'buildername')
+   ON CONFLICT DO NOTHING;
+INSERT INTO host_config (host_id, arches, creator_id)
+   (SELECT builder_host.id, :'builderarches', admin_user.id
+    FROM (SELECT id FROM host WHERE name = :'buildername') AS builder_host,
+         (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user)
+   ON CONFLICT DO NOTHING;
+INSERT INTO host_channels (host_id, channel_id, creator_id)
+   (SELECT builder_host.id, default_channel.id, admin_user.id
+    FROM (SELECT id FROM host WHERE name = :'buildername') AS builder_host,
+         (SELECT id FROM channels WHERE name = 'default') AS default_channel,
+         (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user)
+   ON CONFLICT DO NOTHING;
+END;
+EOF
+
+    if [ "$firstbuilder" -eq 1 ]; then
+        firstbuilder=0
+        psql -d koji -h db -p 5432 -U koji -v buildername="$hostname" << EOF
+INSERT INTO host_channels (host_id, channel_id, creator_id)
+   (SELECT builder_host.id, default_channel.id, admin_user.id
+    FROM (SELECT id FROM host WHERE name = :'buildername') AS builder_host,
+         (SELECT id FROM channels WHERE name = 'createrepo') AS default_channel,
+         (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user)
+   ON CONFLICT DO NOTHING;
+EOF
+    fi
+done
 
 # Start httpd
 exec /usr/sbin/httpd -DFOREGROUND

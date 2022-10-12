@@ -80,7 +80,6 @@ fi
 
 # Copy the public certificate to each build context directory that needs it
 cp koji_ca_cert.crt ./koji-hub/
-cp koji_ca_cert.crt ./koji-admin/
 cp koji_ca_cert.crt ./koji-web/
 cp koji_ca_cert.crt ./koji-builder/
 cp koji_ca_cert.crt ./kojira/
@@ -94,8 +93,17 @@ if [ ! -f koji-hub/koji-hub.crt ]; then
 fi
 
 # Create the certificate for the admin user
-if [ ! -f koji-admin/koji-admin.crt ]; then
-    create_certificate koji-admin
+# Save this one on the filesystem instead of storing as a podman secret
+if [ ! -f ./koji-admin.crt ]; then
+    openssl req -new -noenc \
+        -subj "/C=${CA_COUNTRY}/ST=${CA_STATEORPROVINCE}/L=${CA_LOCALITY}/O=${CA_ORGANIZATION}/OU=koji-admin/CN=koji-admin" \
+        -newkey rsa:2048 -passout 'pass:' \
+        -out koji-admin.csr -keyout koji-admin.key
+    openssl x509 -req -CA koji_ca_cert.crt -CAkey koji_ca_cert.key -passin 'pass:' \
+        -in koji-admin.csr -out koji-admin.crt
+    cat koji-admin.crt koji-admin.key > koji-admin.pem
+
+    rm koji-admin.csr koji-admin.crt koji-admin.key
 fi
 
 # Create a non-admin user certificate
@@ -134,11 +142,6 @@ if [ ! -f koji-builder/koji-builder-x86_64.crt ]; then
     create_certificate koji-builder-x86_64 koji-builder
 fi
 
-# Create a non-admin user certificate for use by the builders' readiness probe.
-if [ ! -f koji-builder/koji-builder-probe.crt ]; then
-    create_certificate koji-builder-probe koji-builder
-fi
-
 # Create the kojira user certificate
 if [ ! -f kojira/kojira.crt ]; then
     create_certificate kojira
@@ -154,6 +157,7 @@ echo "Install certificate files on the host system:"
 echo ""
 echo "cp koji_ca_cert.crt ~/.koji/local-koji-serverca.crt"
 echo "cp koji-user.pem ~/.koji/local-koji-user.pem"
+echo "cp koji-admin.pem ~/.koji/local-koji-admin.pem"
 echo ""
 echo "Add koji_ca_cert.crt to your web browser as a certificate authority"
-echo "Add kojiadmin.p12 to your web browser as a user certificate"
+echo "Add koji-user.p12 to your web browser as a user certificate"
