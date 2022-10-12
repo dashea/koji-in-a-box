@@ -203,12 +203,31 @@ services:
     restart: unless-stopped
     networks:
       - koji-backend
+      - sigul-backend
     secrets:
       - sigul-bridge-certificate-key
     environment:
       SIGUL_BRIDGE_CERTIFICATE_KEY: /run/secrets/sigul-bridge-certificate-key
     ports:
       - "44334:44334"
+
+  sigul-server:
+    build:
+      context: ./sigul-server
+    depends_on:
+      sigul-bridge:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - sigul-backend
+    secrets:
+      - sigul-server-certificate-key
+      - sigul-server-package-signing-key
+      - sigul-key-passphrase
+    environment:
+      SIGUL_SERVER_CERTIFICATE_KEY: /run/secrets/sigul-server-certificate-key
+      SIGUL_SERVER_PACKAGE_SIGNING_KEY: /run/secrets/sigul-server-package-signing-key
+      SIGUL_KEY_PASSPHRASE: /run/secrets/sigul-key-passphrase
 
 volumes:
   db:
@@ -223,6 +242,7 @@ networks:
   koji-backend: {}
   git: {}
   dist-git: {}
+  sigul-backend: {}
 
 secrets:
   koji-postgres-password:
@@ -244,4 +264,10 @@ secrets:
   dist-git-certificate-key:
     external: true
   sigul-bridge-certificate-key:
+    external: true
+  sigul-server-certificate-key:
+    external: true
+  sigul-server-package-signing-key:
+    external: true
+  sigul-key-passphrase:
     external: true

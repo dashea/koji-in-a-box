@@ -85,6 +85,7 @@ cp koji_ca_cert.crt ./koji-builder/
 cp koji_ca_cert.crt ./kojira/
 cp koji_ca_cert.crt ./dist-git/
 cp koji_ca_cert.crt ./sigul-bridge/
+cp koji_ca_cert.crt ./sigul-server/
 
 # Create the certificate and private key for koji-hub
 # Save the public certificate as koji-hub.crt
@@ -156,6 +157,27 @@ fi
 # Create the certificate for sigul-bridge
 if [ ! -f sigul-bridge/sigul-bridge.crt ]; then
     create_localhost_certificate sigul-bridge
+fi
+
+# Create the certificate for sigul-server
+if [ ! -f sigul-server/sigul-server.crt ]; then
+    create_certificate sigul-server
+fi
+
+# Create a key pair for package signing
+if [ ! -f ./package-signing-pub.key ]; then
+    mkdir gpg-tmp
+    chmod 0700 gpg-tmp
+    gpg --homedir "$PWD/gpg-tmp" --batch --passphrase='' --quick-generate-key fedora-addons@reallylongword.org
+    gpg --homedir "$PWD/gpg-tmp" --export -o ./package-signing-pub.key fedora-addons@reallylongword.org
+
+    if podman secret inspect sigul-server-package-signing-key >/dev/null 2>&1 ; then
+        podman secret rm sigul-server-package-signing-key
+    fi
+
+    gpg --homedir "$PWD/gpg-tmp" --export-secret-key -o - fedora-addons@reallylongword.org | podman secret create sigul-server-package-signing-key -
+
+    rm -r gpg-tmp
 fi
 
 echo ""

@@ -16,3 +16,6 @@
 /dist-git/koji_ca_cert.crt
 /sigul-bridge/sigul-bridge.crt
 /sigul-bridge/koji_ca_cert.crt
+/sigul-server/sigul-server.crt
+/sigul-server/koji_ca_cert.crt
+/package-signing-pub.key
