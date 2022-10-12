@@ -84,6 +84,7 @@ cp koji_ca_cert.crt ./koji-web/
 cp koji_ca_cert.crt ./koji-builder/
 cp koji_ca_cert.crt ./kojira/
 cp koji_ca_cert.crt ./dist-git/
+cp koji_ca_cert.crt ./sigul-bridge/
 
 # Create the certificate and private key for koji-hub
 # Save the public certificate as koji-hub.crt
@@ -150,6 +151,11 @@ fi
 # Create the dist-git certificate
 if [ ! -f dist-git/dist-git.crt ]; then
     create_localhost_certificate dist-git
+fi
+
+# Create the certificate for sigul-bridge
+if [ ! -f sigul-bridge/sigul-bridge.crt ]; then
+    create_localhost_certificate sigul-bridge
 fi
 
 echo ""

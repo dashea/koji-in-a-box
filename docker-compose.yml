@@ -36,7 +36,7 @@ services:
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/koji-postgres-password
       KOJI_HUB_CERTIFICATE_KEY: /run/secrets/koji-hub-certificate-key
-      KOJI_USERS: "koji-hub koji-user koji-hub"
+      KOJI_USERS: "koji-hub koji-user koji-hub sigul-bridge"
       KOJI_BUILDERS: "x86_64 aarch64"
       KOJI_BUILDER_x86_64: "x86_64"
       KOJI_BUILDER_aarch64: "aarch64"
@@ -194,6 +194,22 @@ services:
     ports:
       - "8082:443"
 
+  sigul-bridge:
+    build:
+      context: ./sigul-bridge
+    depends_on:
+      koji-hub:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - koji-backend
+    secrets:
+      - sigul-bridge-certificate-key
+    environment:
+      SIGUL_BRIDGE_CERTIFICATE_KEY: /run/secrets/sigul-bridge-certificate-key
+    ports:
+      - "44334:44334"
+
 volumes:
   db:
     driver: local
@@ -226,4 +242,6 @@ secrets:
   kojira-certificate-key:
     external: true
   dist-git-certificate-key:
+    external: true
+  sigul-bridge-certificate-key:
     external: true
