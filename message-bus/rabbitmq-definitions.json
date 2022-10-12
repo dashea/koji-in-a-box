@@ -19,6 +19,13 @@
       "configure": ".*",
       "read": ".*",
       "write": ".*"
+    },
+    {
+      "user": "robosignatory",
+      "vhost": "/",
+      "configure": ".*",
+      "read": ".*",
+      "write": ".*"
     }
   ],
   "policies": [],
@@ -41,11 +48,25 @@
       "exchange": "",
       "read": "",
       "write": ".*"
+    },
+    {
+      "user": "robosignatory",
+      "vhost": "/",
+      "exchange": ".*",
+      "read": ".*",
+      "write": ".*"
     }
   ],
   "users": [
     {
       "name": "koji-hub",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "limits": {},
+      "password_hash": "9v3Oq03avGQc1TXHSL5lR8Tec69g8EKmDmb9rBpplnDUzsCy",
+      "tags": []
+    },
+    {
+      "name": "robosignatory",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "limits": {},
       "password_hash": "9v3Oq03avGQc1TXHSL5lR8Tec69g8EKmDmb9rBpplnDUzsCy",

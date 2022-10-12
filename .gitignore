@@ -21,3 +21,6 @@
 /package-signing-pub.key
 /message-bus/koji_ca_cert.crt
 /message-bus/message-bus.crt
+/robosignatory/koji_ca_cert.crt
+/robosignatory/robosignatory.crt
+/robosignatory/package-signing-pub.key

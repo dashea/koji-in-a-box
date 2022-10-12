@@ -50,7 +50,7 @@ psql -d koji -h db -p 5432 -U koji -c '\d events' > /dev/null 2>&1 ||
     psql -d koji -h db -p 5432 -U koji -f /usr/share/doc/koji/docs/schema.sql
 
 # Create the initial set of users
-for user in koji-admin koji-hub koji-user kojira ; do
+for user in koji-admin koji-hub koji-user kojira robosignatory ; do
     psql -d koji -h db -p 5432 -U koji -v user="$user" <<EOF
 INSERT INTO users (name, status, usertype) VALUES (:'user', 0, 0) ON CONFLICT DO NOTHING;
 EOF
@@ -73,6 +73,16 @@ INSERT INTO user_perms (user_id, perm_id, creator_id)
           (SELECT id FROM permissions WHERE name = 'repo') AS repo_perm,
           (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user)
     ON CONFLICT DO NOTHING;
+EOF
+
+# Add sign permission to robosignatory
+psql -d koji -h db -p 5432 -U koji <<EOF
+INSERT INTO user_perms (user_id, perm_id, creator_id)
+   (SELECT robo_user.id, sign_perm.id, admin_user.id
+    FROM (SELECT id FROM users WHERE name = 'robosignatory') AS robo_user,
+         (SELECT id FROM permissions WHERE name = 'sign') AS sign_perm,
+         (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user)
+   ON CONFLICT DO NOTHING;
 EOF
 
 # Create the builders

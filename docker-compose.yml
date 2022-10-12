@@ -206,6 +206,7 @@ services:
     networks:
       - koji-backend
       - sigul-backend
+      - sigul-frontend
     secrets:
       - sigul-bridge-certificate-key
     environment:
@@ -247,6 +248,25 @@ services:
       timeout: 5s
       retries: 10
 
+  robosignatory:
+    build:
+      context: ./robosignatory
+    restart: unless-stopped
+    depends_on:
+      message-bus:
+        condition: service_healthy
+      koji-hub:
+        condition: service_healthy
+    networks:
+      - message-bus
+      - sigul-frontend
+    secrets:
+      - robosignatory-certificate-key
+      - sigul-key-passphrase
+    environment:
+      ROBOSIGNATORY_CERTIFICATE_KEY: /run/secrets/robosignatory-certificate-key
+      SIGUL_KEY_PASSPHRASE: /run/secrets/sigul-key-passphrase
+
 volumes:
   db:
     driver: local
@@ -263,6 +283,7 @@ networks:
   git: {}
   dist-git: {}
   sigul-backend: {}
+  sigul-frontend: {}
   message-bus: {}
 
 secrets:
@@ -293,4 +314,6 @@ secrets:
   sigul-key-passphrase:
     external: true
   message-bus-certificate-key:
+    external: true
+  robosignatory-certificate-key:
     external: true

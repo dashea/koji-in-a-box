@@ -178,11 +178,12 @@ podman-compose up
 ### Bootstrap the build environment
 
 The first thing to do is create some tags.
-Create a tag to act as a root of the repository you will be creating, and a build tag beneath this tag.
+Create a tag to act as a root of the repository you will be creating, a build tag beneath the repository tag, and a destination tag that builds will be tagged into.
 
 ```sh
 koji -p local-admin add-tag --arches="x86_64 aarch64" f36-addons
 koji -p local-admin add-tag --parent f36-addons --arches "x86_64 aarch64" f36-addons-build
+koji -p local-admin add-tag --parent f36-addons --arches="x86_64 aarch64" f36-addons-signing-pending
 ```
 
 If starting with external repos, see [External Repository Server Bootstrap](https://docs.pagure.org/koji/external_repo_server_bootstrap/).
@@ -195,10 +196,10 @@ koji -p local-admin add-external-repo -t f36-addons-build f36-repo https://dl.fe
 koji -p local-admin add-external-repo -t f36-addons-build f36-updates-repo https://dl.fedoraproject.org/pub/fedora/linux/updates/36/Everything/\$arch/
 ```
 
-Add the -build tag as a build target:
+Add the -build tag as a build target, and tag builds into the -signing-pending tag:
 
 ```sh
-koji -p local-admin add-target f36-addons f36-addons-build
+koji -p local-admin add-target f36-addons f36-addons-build f36-addons-signing-pending
 ```
 
 Add build groups to the build tag:
@@ -404,10 +405,10 @@ EOF
 The following example uses the [mkrpm](https://github.com/dashea/mkrpm) project.
 I don't remember if `mkrpm` actually works or not, but it is some C code that compiles and is not packaged in Fedora, so it's good enough for here.
 
-Add the package to your koji tag.
+Add the package to your destination koji tag.
 
 ```sh
-koji -p local-admin add-pkg --owner koji-user f36-addons mkrpm
+koji -p local-admin add-pkg --owner koji-user f36-addons
 ```
 
 Create the git repository.
