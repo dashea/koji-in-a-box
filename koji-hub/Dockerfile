@@ -12,7 +12,7 @@ RUN dnf install --repo=fedora --setopt=tsflags= -y koji-0:1.28.0-1.fc36 && \
 
 # Create configuration files that do not depend on runtime secrets
 COPY ./localhost-koji.conf /etc/koji.conf.d/localhost.conf
-COPY ./proxy-dns.conf /etc/koji-hub/hub.conf.d/proxy-dns.conf
+COPY ./hub.conf /etc/koji-hub/hub.conf
 COPY ./ssl.conf /etc/httpd/conf.d/ssl.conf
 COPY ./httpd-limits.conf /etc/httpd/conf.d/limits.conf
 COPY ./kojihub-auth.conf /etc/httpd/conf.d/kojihub-auth.conf
