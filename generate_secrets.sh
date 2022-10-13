@@ -94,7 +94,7 @@ fi
 
 # Create the certificate for the admin user
 # Save this one on the filesystem instead of storing as a podman secret
-if [ ! -f ./koji-admin.crt ]; then
+if [ ! -f ./koji-admin.pem ]; then
     openssl req -new -noenc \
         -subj "/C=${CA_COUNTRY}/ST=${CA_STATEORPROVINCE}/L=${CA_LOCALITY}/O=${CA_ORGANIZATION}/OU=koji-admin/CN=koji-admin" \
         -newkey rsa:2048 -passout 'pass:' \
