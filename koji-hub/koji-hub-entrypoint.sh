@@ -4,7 +4,6 @@
 # - POSTGRES_PASSWORD_FILE: path to a file containing the password for the koji user in postgres
 # - KOJI_HUB_CERTIFICATE_KEY: path to a file containing the private key
 # OPTIONAL ENVIRONMENT VARIABLES
-# - KOJI_USERS: space-separated list of users to create
 # - KOJI_BUILDERS: space-separated list of builder names (will be created as koji-builder-<builder>
 # - KOJI_BUILDER_<builder-name>: List of architectures for given builder
 # The first listed builder is also added to the createrepo channel
@@ -50,35 +49,40 @@ cat /etc/pki/koji/koji-hub.crt "$KOJI_HUB_CERTIFICATE_KEY" > /etc/pki/koji/koji-
 psql -d koji -h db -p 5432 -U koji -c '\d events' > /dev/null 2>&1 ||
     psql -d koji -h db -p 5432 -U koji -f /usr/share/doc/koji/docs/schema.sql
 
-# Create the admin user
-psql -d koji -h db -p 5432 -U koji <<EOF
-BEGIN;
-INSERT INTO users (name, status, usertype) VALUES ('koji-admin', 0, 0) ON CONFLICT DO NOTHING;
-INSERT INTO user_perms (user_id, perm_id, creator_id)
-  (SELECT admin_user.id, admin_perm.id, admin_user.id
-   FROM (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user,
-        (SELECT id FROM permissions WHERE name = 'admin') AS admin_perm)
-  ON CONFLICT DO NOTHING;
-COMMIT;
-EOF
-
-for user in $KOJI_USERS ; do
+# Create the initial set of users
+for user in koji-admin koji-hub koji-user sigul-client kojira ; do
     psql -d koji -h db -p 5432 -U koji -v user="$user" <<EOF
 INSERT INTO users (name, status, usertype) VALUES (:'user', 0, 0) ON CONFLICT DO NOTHING;
 EOF
 done
 
-# Handle the kojira user separately, since it needs repo permissions
+# Add admin permission to koji-admin
 psql -d koji -h db -p 5432 -U koji <<EOF
-BEGIN;
-INSERT INTO users (name, status, usertype) VALUES ('kojira', 0, 0) ON CONFLICT DO NOTHING;
+INSERT INTO user_perms (user_id, perm_id, creator_id)
+  (SELECT admin_user.id, admin_perm.id, admin_user.id
+   FROM (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user,
+        (SELECT id FROM permissions WHERE name = 'admin') AS admin_perm)
+  ON CONFLICT DO NOTHING;
+EOF
+
+# Add repo permission to kojira
+psql -d koji -h db -p 5432 -U koji <<EOF
 INSERT INTO user_perms (user_id, perm_id, creator_id)
     (SELECT kojira_user.id, repo_perm.id, admin_user.id
      FROM (SELECT id FROM users WHERE name = 'kojira') AS kojira_user,
           (SELECT id FROM permissions WHERE name = 'repo') AS repo_perm,
           (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user)
     ON CONFLICT DO NOTHING;
-COMMIT;
+EOF
+
+# Add sign permissions to sigul-client
+psql -d koji -h db -p 5432 -U koji <<EOF
+INSERT INTO user_perms (user_id, perm_id, creator_id)
+    (SELECT sigul_client.id, sign_perm.id, admin_user.id
+     FROM (SELECT id FROM users WHERE name = 'sigul-client') AS sigul_client,
+          (SELECT id FROM permissions WHERE name = 'sign') AS sign_perm,
+          (SELECT id FROM users WHERE name = 'koji-admin') AS admin_user)
+    ON CONFLICT DO NOTHING;
 EOF
 
 # Create the builders

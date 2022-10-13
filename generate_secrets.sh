@@ -169,7 +169,7 @@ if [ ! -f ./package-signing-pub.key ]; then
     mkdir gpg-tmp
     chmod 0700 gpg-tmp
     gpg --homedir "$PWD/gpg-tmp" --batch --passphrase='' --quick-generate-key fedora-addons@reallylongword.org
-    gpg --homedir "$PWD/gpg-tmp" --export -o ./package-signing-pub.key fedora-addons@reallylongword.org
+    gpg --homedir "$PWD/gpg-tmp" --export -o ./package-signing-pub.key -a fedora-addons@reallylongword.org
 
     if podman secret inspect sigul-server-package-signing-key >/dev/null 2>&1 ; then
         podman secret rm sigul-server-package-signing-key
@@ -178,6 +178,20 @@ if [ ! -f ./package-signing-pub.key ]; then
     gpg --homedir "$PWD/gpg-tmp" --export-secret-key -o - fedora-addons@reallylongword.org | podman secret create sigul-server-package-signing-key -
 
     rm -r gpg-tmp
+fi
+
+if [ ! -f sigul-client.p12 ]; then
+    openssl req -new -noenc \
+        -subj "/C=${CA_COUNTRY}/ST=${CA_STATEORPROVINCE}/L=${CA_LOCALITY}/O=${CA_ORGANIZATION}/OU=sigul-client/CN=sigul-client" \
+        -newkey rsa:2048 -passout 'pass:' \
+        -out sigul-client.csr -keyout sigul-client.key
+    openssl x509 -req -CA koji_ca_cert.crt -CAkey koji_ca_cert.key -passin 'pass:' \
+        -in sigul-client.csr -out sigul-client.crt
+
+    openssl pkcs12 -export -inkey sigul-client.key -in sigul-client.crt -passout 'pass:' \
+        -CAfile koji_ca_cert.crt -out sigul-client.p12 -name sigul-client-cert
+
+    rm sigul-client.csr sigul-client.crt sigul-client.key
 fi
 
 echo ""

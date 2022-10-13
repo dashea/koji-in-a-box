@@ -36,7 +36,6 @@ services:
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/koji-postgres-password
       KOJI_HUB_CERTIFICATE_KEY: /run/secrets/koji-hub-certificate-key
-      KOJI_USERS: "koji-hub koji-user koji-hub sigul-bridge"
       KOJI_BUILDERS: "x86_64 aarch64"
       KOJI_BUILDER_x86_64: "x86_64"
       KOJI_BUILDER_aarch64: "aarch64"
