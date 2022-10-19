@@ -49,6 +49,7 @@ services:
       - "443"
     ports:
       - "8081:443"
+      - "8083:80"
     healthcheck:
       test: ["CMD", "koji", "-p", "localhost", "moshimoshi"]
       interval: 5s

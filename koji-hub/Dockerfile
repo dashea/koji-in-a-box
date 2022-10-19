@@ -1,6 +1,7 @@
 # hadolint ignore=DL3029
 FROM --platform=$BUILDPLATFORM docker.io/library/fedora:36
 EXPOSE 443
+EXPOSE 80
 
 # Fedora docker images are built with tsflags=nodocs in dnf.conf.
 # The koji-hub DDL is marked as a doc file, so disable this option when installing koji.

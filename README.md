@@ -21,6 +21,7 @@ mkdir ~/.koji
 cat - <<EOF
 [local-koji]
 server = https://localhost:8081/kojihub
+topurl = http://localhost:8083/kojifiles
 weburl = https://localhost:8080/koji
 authtype = ssl
 cert = ~/.koji/local-koji-user.pem
