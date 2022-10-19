@@ -132,6 +132,7 @@ Copy the koji-user certificates to your home directory:
 ```sh
 cp koji_ca_cert.crt ~/.koji/local-koji-serverca.crt
 cp koji-user.pem ~/.koji/local-koji-user.pem
+cp koji-admin.pem ~/.koji/local-koji-admin.pem
 ```
 
 Add the CA certificate to your web browser as a certificate authority.
