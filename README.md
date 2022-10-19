@@ -18,7 +18,7 @@ The `generate_secrets.sh` script will create credentials for both regular and ad
 
 ```sh
 mkdir ~/.koji
-cat - <<EOF
+cat - > ~/.koji/config <<EOF
 [local-koji]
 server = https://localhost:8081/kojihub
 topurl = http://localhost:8083/kojifiles
