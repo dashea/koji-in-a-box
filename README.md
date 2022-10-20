@@ -372,6 +372,12 @@ except KeyboardInterrupt:
     pass
 ```
 
+Make the script executable.
+
+```sh
+chmod +x ~/.local/bin/mypkg
+```
+
 Create a configuration file with the local dist-git settings.
 
 ```sh
@@ -381,8 +387,8 @@ cat - > ~/.config/rpkg/mypkg.conf <<EOF
 lookaside = https://localhost:8082/repo/pkgs
 lookasidehash = sha512
 lookaside_cgi = https://localhost:8082/repo/pkgs/upload.cgi
-gitbaseurl = file://${KOJI_GIT_PATH}/%(repo)s.git
-anongiturl = file://${KOJI_GIT_PATH}/%(repo)s.git
+gitbaseurl = file://${KOJI_GIT_PATH}/rpms/%(repo)s.git
+anongiturl = file://${KOJI_GIT_PATH}/rpms/%(repo)s.git
 branchre = f\d$|f\d\d$|el\d$|main$
 kojiprofile = local-koji
 build_client = koji
@@ -409,7 +415,7 @@ Add an empty .gitignore to initialize it.
 git init --bare "${KOJI_GIT_PATH}/rpms/mkrpm.git"
 tmpdir="$(mktemp -d)"
 ( cd "$tmpdir"
-  git clone "${KOJI_GIT_PATH}/mkrpm.git" mkrpm
+  git clone "${KOJI_GIT_PATH}/rpms/mkrpm.git" mkrpm
   cd mkrpm
   touch .gitignore
   git add .gitignore
@@ -422,7 +428,7 @@ rm -rf "$tmpdir"
 Check out a copy of the git repo.
 
 ```sh
-rpkg clone mkrpm
+mypkg clone mkrpm
 cd mkrpm
 ```
 
