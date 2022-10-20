@@ -156,7 +156,7 @@ fi
 
 # Create the certificate for sigul-bridge
 if [ ! -f sigul-bridge/sigul-bridge.crt ]; then
-    create_localhost_certificate sigul-bridge
+    create_certificate sigul-bridge
 fi
 
 # Create the certificate for sigul-server
@@ -180,19 +180,9 @@ if [ ! -f ./package-signing-pub.key ]; then
     rm -r gpg-tmp
 fi
 
-if [ ! -f sigul-client.p12 ]; then
-    openssl req -new -noenc \
-        -subj "/C=${CA_COUNTRY}/ST=${CA_STATEORPROVINCE}/L=${CA_LOCALITY}/O=${CA_ORGANIZATION}/OU=sigul-client/CN=sigul-client" \
-        -newkey rsa:2048 -passout 'pass:' \
-        -out sigul-client.csr -keyout sigul-client.key
-    openssl x509 -req -CA koji_ca_cert.crt -CAkey koji_ca_cert.key -passin 'pass:' \
-        -in sigul-client.csr -out sigul-client.crt
-
-    openssl pkcs12 -export -inkey sigul-client.key -in sigul-client.crt -passout 'pass:' \
-        -CAfile koji_ca_cert.crt -out sigul-client.p12 -name sigul-client-cert
-
-    rm sigul-client.csr sigul-client.crt sigul-client.key
-fi
+# Generate a passphrase for the signing key
+podman secret inspect sigul-key-passphrase >/dev/null 2>&1 || \
+    openssl rand -base64 32 | podman secret create sigul-key-passphrase -
 
 echo ""
 echo "Install certificate files on the host system:"

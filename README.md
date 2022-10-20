@@ -161,15 +161,6 @@ sudo chown $UID:$GID /var/lib/git/local-koji
 export KOJI_GIT_PATH=/var/lib/git/local-koji
 ```
 
-### Add a passphrase for the package signing key
-
-This is the passphrase sent to sigul.
-It will be used to import the signing key created by `generate_secrets.sh`, and it will be used every time you sign a package.
-
-```sh
-printf 'password' | podman secret create sigul-key-passphrase -
-```
-
 ### Fire it up
 
 Build the necessary container images:
@@ -528,79 +519,6 @@ Replace this with the value you use as `init.defaultBranch` (e.g., `master`).
 ```sh
 koji -p local-koji build f36-addons 'git://git/rpms/mkrpm.git?#main'
 ```
-
-### Sign the packages
-
-Packages are signed through sigul.
-Installing sigul requires a couple of extra steps, since it has not been installable on Fedora since version 35 for inscrutable reasons.
-
-```sh
-sudo dnf install dnf-plugins-core
-sudo dnf copr enable dshea/buildsys
-sudo dnf install sigul
-```
-
-Start by creating a config file.
-
-```sh
-mkdir -p ~/.sigul
-cat - > ~/.sigul/client.conf <<EOF
-[client]
-bridge-hostname: localhost
-bridge-port: 44334
-client-cert-nickname: sigul-client-cert
-server-hostname: sigul-server
-user-name: sigul-client
-
-[koji]
-koji-config: ~/.koji/config.sigul
-
-[nss]
-nss-dir: ~/.sigul/nss
-nss-password:
-nss-min-tls: tls1.2
-nss-max-tls: tls1.3
-
-[binding]
-enabled:
-EOF
-```
-
-Sigul does not support koji profiles, which is why the above client.conf references a separate koji config file.
-Create that koji config file, copying the settings from the `local-koji` profile in the regular config.
-
-```sh
-cat - > ~/.koji/config.sigul <<EOF
-[koji]
-server = https://localhost:8081/kojihub
-topurl = http://localhost:8083/kojifiles
-weburl = https://localhost:8080/koji
-authtype = ssl
-cert = ~/.koji/local-koji-user.pem
-serverca = ~/.koji/local-koji-serverca.crt
-EOF
-```
-
-Like koji, authentication to sigul is managed via SSL certificates.
-Sigul reads certifcates from a NSS database.
-The following commands import the sigul-client certificate into an NSS database, using empty passwords for everything.
-
-```sh
-sudo dnf install nss-tools
-mkdir -p ~/.sigul/nss
-certutil -d ~/.sigul/nss -N --empty-password
-certutil -d ~/.sigul/nss -A -n koji_ca_cert -t CT,, -a -i koji_ca_cert.crt
-pk12util -d ~/.sigul/nss -i sigul-client.p12 -W ''
-```
-
-At this point you will be able to sign all of the built packages.
-The passphrase requested by the following command is the passphrase set in `sigul-key-passphrase` above.
-
-```sh
-sigul sign-rpms --store-in-koji --koji-only package-signing mkrpm-0^20190530git4f7587c-1.fc36.src mkrpm-debuginfo-0^20190530git4f7587c-1.fc36.x86_64 mkrpm-debugsource-0^20190530git4f7587c-1.fc36.x86_64 mkrpm-0^20190530git4f7587c-1.fc36.x86_64 mkrpm-debuginfo-0^20190530git4f7587c-1.fc36.aarch64 mkrpm-debugsource-0^20190530git4f7587c-1.fc36.aarch64 mkrpm-0^20190530git4f7587c-1.fc36.aarch64
-```
-
-This will store signatures in koji that will be available when later creating a repo.
 
 ## Other notes
 

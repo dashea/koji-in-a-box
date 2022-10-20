@@ -49,9 +49,5 @@ openssl pkcs12 -export -in /etc/pki/koji/sigul-server.pem -out /etc/pki/koji/sig
 pk12util -d /var/lib/sigul/nss -i /etc/pki/koji/sigul-server.p12 -W ''
 
 sigul_server_create_db
-printf '\0' | sigul_server_add_admin -n sigul-client --batch
-
-# Add the signing key
-/server_add_key.py --key-file "$SIGUL_SERVER_PACKAGE_SIGNING_KEY" --key-admin sigul-client --key-name package-signing --new-key-passphrase-file "$SIGUL_KEY_PASSPHRASE"
 
 exec /usr/sbin/sigul_server -v

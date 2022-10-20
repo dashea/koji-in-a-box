@@ -207,8 +207,6 @@ services:
       - sigul-bridge-certificate-key
     environment:
       SIGUL_BRIDGE_CERTIFICATE_KEY: /run/secrets/sigul-bridge-certificate-key
-    ports:
-      - "44334:44334"
 
   sigul-server:
     build:

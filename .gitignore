@@ -18,5 +18,4 @@
 /sigul-bridge/koji_ca_cert.crt
 /sigul-server/sigul-server.crt
 /sigul-server/koji_ca_cert.crt
-/sigul-client.p12
 /package-signing-pub.key
