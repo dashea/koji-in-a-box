@@ -210,7 +210,9 @@ koji -p local-admin add-group f36-addons-build srpm-build
 
 Add packages to the build groups.
 If basing things on Fedora, it's probably easiest to just do what Fedora did.
-See [Koji Server Bootstrap](https://docs.pagure.org/koji/server_bootstrap/) for information on fetching the Fedora configuration, which you will not be able to do from within the containers because they lack the configuration and utilities for krb5 authentication.
+See [Koji Server Bootstrap](https://docs.pagure.org/koji/server_bootstrap/) for information on fetching the Fedora configuration.
+Running commands against the Fedora koji instance require that you be a Fedora packager and authenticated via krb5.
+
 The following adds the packages currently configured for Fedora 36 in the `build` and `srpm-build` groups:
 
 ```sh
