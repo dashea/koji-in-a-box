@@ -5,10 +5,14 @@ EXPOSE 80
 
 # Fedora docker images are built with tsflags=nodocs in dnf.conf.
 # The koji-hub DDL is marked as a doc file, so disable this option when installing koji.
+# koji-fedmsg-plugin is not packaged in Fedora, download it from copr
 RUN dnf install --repo=fedora --setopt=tsflags= -y koji-0:1.28.0-1.fc36 && \
     dnf install --repo=fedora -y postgresql-0:14.1-3.fc36 \
                                  koji-hub-0:1.28.0-1.fc36 \
+                                 dnf-plugins-core-4.1.0-1.fc36 \
                                  mod_ssl-1:2.4.53-1.fc36 && \
+    dnf -y copr enable dshea/buildsys && \
+    dnf -y install --repo=fedora,\*copr\* koji-fedmsg-plugin-0:0.1.0^20220713git52ace35-2.fc36 && \
     dnf clean all
 
 # Create configuration files that do not depend on runtime secrets
@@ -18,6 +22,7 @@ COPY ./ssl.conf /etc/httpd/conf.d/ssl.conf
 COPY ./httpd-limits.conf /etc/httpd/conf.d/limits.conf
 COPY ./kojihub-auth.conf /etc/httpd/conf.d/kojihub-auth.conf
 COPY ./kojihub-servername.conf /etc/httpd/conf.d/kojihub-servername.conf
+COPY ./fedmsg.toml /etc/fedora-messaging/config.toml
 
 # Create the necessary filesystem skeleton under /mnt/koji
 WORKDIR /mnt/koji

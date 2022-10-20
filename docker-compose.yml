@@ -29,6 +29,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      message-bus:
+        condition: service_healthy
     restart: unless-stopped
     secrets:
       - koji-postgres-password
@@ -44,6 +46,7 @@ services:
     networks:
       - db
       - koji-backend
+      - message-bus
     expose:
       - "443"
     ports:
