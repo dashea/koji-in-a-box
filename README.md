@@ -521,6 +521,41 @@ Replace this with the value you use as `init.defaultBranch` (e.g., `master`).
 koji -p local-koji build f36-addons 'git://git/rpms/mkrpm.git?#main'
 ```
 
+### Create a repo
+
+The simplest way to create a dnf repository from your built packages is the `koji dist-repo` command.
+
+`dist-repo` takes a tag name and a GPG key ID.
+The key ID is the last eight digits of the GPG key ID, lowercased.
+
+For example, if gpg output the following:
+
+```sh
+$ gpg --show-key package-signing-pub.key
+pub   ed25519 2022-10-19 [SC] [expires: 2024-10-18]
+      47D719538AEE21C236B1DB588E25E94194AF4640
+uid                      fedora-addons@reallylongword.org
+sub   cv25519 2022-10-19 [E]
+```
+
+The key ID would be `94af4640`.
+
+Or, using the shell to parse the output:
+
+```sh
+KEYID="$(gpg --show-key --with-colons package-signing-pub.key | grep '^fpr:' | head -n 1 | sed 's/.*\([A-Z0-9]\{8\}\):$/\1/' | tr '[:upper:]' '[:lower:]')"
+```
+
+and then:
+
+```sh
+koji -p local-koji dist-repo --with-src --split-debuginfo --write-signed-rpms f36-addons $KEYID
+```
+
+The repo can now be found under http://localhost:8083/kojifiles/repos-dist/.
+
+For more advanced compose options, see the [pungi](https://docs.pagure.org/pungi/index.html) tool.
+
 ## Other notes
 
 ### Authentication
